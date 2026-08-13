@@ -50,6 +50,20 @@ async function initDb() {
       quantity INTEGER NOT NULL
     )
   `);
+
+  // Statut "live en cours" — une seule ligne (id=1) que l'admin bascule
+  // depuis la page admin. Le site public la consulte pour faire clignoter
+  // le bouton TikTok.
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS site_status (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      is_live INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await client.execute(`
+    INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
+  `);
 }
 
 module.exports = { client, initDb };

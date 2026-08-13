@@ -3,10 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
-const { initDb } = require('./db');
+const { initDb } = require('./index');
 const productsRouter = require('./routes/products');
 const ordersRouter = require('./routes/orders');
 const paymentsRouter = require('./routes/payments');
+const liveStatusRouter = require('./routes/live-status');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/live-status', liveStatusRouter);
 
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));
 
