@@ -91,6 +91,14 @@
   }
   .navlinks a:hover::after{transform:scaleX(1); transform-origin:left;}
   .navicons{display:flex; align-items:center; gap:18px; font-size:14px;}
+  #tiktok-nav-link.is-live{
+    color:var(--live); font-weight:700;
+    animation:tiktok-blink 1.1s infinite;
+  }
+  @keyframes tiktok-blink{
+    0%, 100%{opacity:1;}
+    50%{opacity:.35;}
+  }
 
   /* ---------- ticker : signature element ---------- */
   .ticker-bar{
@@ -209,11 +217,35 @@
   /* ---------- products ---------- */
   .products{display:grid; grid-template-columns:repeat(4,1fr); gap:22px;}
   .product{cursor:pointer;}
+
+  /* ---------- quick view ---------- */
+  .quickview-overlay{
+    position:fixed; inset:0; background:rgba(20,17,15,.55); z-index:90;
+    display:none; align-items:center; justify-content:center; padding:24px;
+  }
+  .quickview-overlay.open{display:flex;}
+  .quickview-card{
+    background:var(--cream); max-width:760px; width:100%; max-height:88vh; overflow-y:auto;
+    border-radius:4px; display:grid; grid-template-columns:1fr 1fr; position:relative;
+  }
+  .qv-close{
+    position:absolute; top:14px; right:14px; z-index:2;
+    background:var(--cream); border:1px solid var(--line); border-radius:50%;
+    width:34px; height:34px; font-size:18px; cursor:pointer; line-height:1;
+  }
+  .qv-img-wrap{aspect-ratio:3/4; background:var(--cream-2);}
+  .qv-img-wrap img{width:100%; height:100%; object-fit:cover; display:block;}
+  .qv-info{padding:32px 28px; display:flex; flex-direction:column;}
+  .qv-info h3{font-family:var(--font-display); font-size:26px; font-weight:600; margin-bottom:10px;}
+  .qv-info .price{font-family:var(--font-mono); font-size:16px; color:var(--wine); margin-bottom:16px;}
+  .qv-info .desc{font-size:14px; line-height:1.6; color:rgba(20,17,15,.72); margin-bottom:24px; flex:1;}
+  @media (max-width:640px){ .quickview-card{grid-template-columns:1fr;} }
   .product-img{
     position:relative; aspect-ratio:3/4; border-radius:3px; overflow:hidden;
     margin-bottom:14px;
     background:var(--cream-2);
   }
+  .product-img img{width:100%; height:100%; object-fit:cover; display:block;}
   .p1 .product-img{background:linear-gradient(160deg,#EFE6D6,#C9A96B);}
   .p2 .product-img{background:linear-gradient(160deg,#E8D8DA,#8E4256);}
   .p3 .product-img{background:linear-gradient(160deg,#DAD3C2,#3C3630);}
@@ -394,7 +426,7 @@
       <a href="#avis">Avis</a>
     </div>
     <div class="navicons">
-      <a href="https://www.tiktok.com/@amoulette.soltani" target="_blank" rel="noopener">TikTok</a>
+      <a href="https://www.tiktok.com/@amoulette.soltani" target="_blank" rel="noopener" id="tiktok-nav-link">TikTok</a>
       <a href="#">Recherche</a>
       <a href="#" id="cart-toggle">Panier (<span id="cart-count">0</span>)</a>
     </div>
@@ -473,7 +505,7 @@
       <h2>Ce soir, 20h.<br><i>Sois là avant les autres.</i></h2>
       <p>Les pièces en live partent en premier, souvent avant même d'arriver sur le site. Active les notifications pour ne rien manquer.</p>
     </div>
-    <a class="btn" href="#">Ouvrir TikTok →</a>
+    <a class="btn" id="live-band-cta" href="https://www.tiktok.com/@amoulette.soltani" target="_blank" rel="noopener">Ouvrir TikTok →</a>
   </div>
 </section>
 
@@ -577,6 +609,19 @@
   </div>
 </aside>
 
+<div class="quickview-overlay" id="quickview-overlay">
+  <div class="quickview-card">
+    <button class="qv-close" id="qv-close">×</button>
+    <div class="qv-img-wrap"><img id="qv-img" src="" alt=""></div>
+    <div class="qv-info">
+      <h3 id="qv-name"></h3>
+      <div class="price" id="qv-price"></div>
+      <p class="desc" id="qv-desc"></p>
+      <button class="btn" id="qv-add">Ajouter au panier</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const API_BASE = 'https://blingbling-b7cg.onrender.com';
 
@@ -617,8 +662,9 @@
       return;
     }
     grid.innerHTML = products.map(p => `
-      <div class="product">
+      <div class="product" data-id="${p.id}">
         <div class="product-img">
+          ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           <span class="wish">♡</span>
         </div>
@@ -632,8 +678,32 @@
     `).join('');
 
     grid.querySelectorAll('.add-btn').forEach(btn => {
-      btn.addEventListener('click', () => addToCart(Number(btn.dataset.id)));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        addToCart(Number(btn.dataset.id));
+      });
     });
+    grid.querySelectorAll('.product').forEach(card => {
+      card.addEventListener('click', () => openQuickView(Number(card.dataset.id)));
+    });
+  }
+
+  function openQuickView(id){
+    const p = products.find(p => p.id === id);
+    if(!p) return;
+    document.getElementById('qv-img').src = p.image_url || '';
+    document.getElementById('qv-img').style.display = p.image_url ? 'block' : 'none';
+    document.getElementById('qv-name').textContent = p.name;
+    document.getElementById('qv-price').textContent = formatPrice(p.price_millimes);
+    document.getElementById('qv-desc').textContent = p.description || '';
+    const qvAdd = document.getElementById('qv-add');
+    qvAdd.disabled = p.stock <= 0;
+    qvAdd.textContent = p.stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier';
+    qvAdd.onclick = () => { addToCart(id); closeQuickView(); };
+    document.getElementById('quickview-overlay').classList.add('open');
+  }
+  function closeQuickView(){
+    document.getElementById('quickview-overlay').classList.remove('open');
   }
 
   function addToCart(productId){
@@ -772,6 +842,23 @@
       formError.classList.add('open');
     }
   });
+
+  document.getElementById('qv-close').addEventListener('click', closeQuickView);
+  document.getElementById('quickview-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'quickview-overlay') closeQuickView();
+  });
+
+  async function checkLiveStatus(){
+    try{
+      const res = await fetch(`${API_BASE}/api/live-status`);
+      const data = await res.json();
+      document.getElementById('tiktok-nav-link').classList.toggle('is-live', !!data.is_live);
+    }catch(err){
+      // silencieux : si l'API est indisponible, on n'affiche juste pas le clignotement
+    }
+  }
+  checkLiveStatus();
+  setInterval(checkLiveStatus, 30000); // revérifie toutes les 30 secondes
 
   loadProducts();
 </script>
