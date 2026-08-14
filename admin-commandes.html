@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLINGBLING ACCESSOIRES — Commandes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14110F; --cream:#F3ECDF; --cream-2:#EAE1CE; --wine:#6B1E3C; --live:#FF3B6E; --gold:#B9925A;
+    --line: rgba(20,17,15,0.12);
+    --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--cream); color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased; min-height:100vh; }
+  a{color:inherit;}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 24px;}
+
+  header{ border-bottom:1px solid var(--line); padding:22px 0; }
+  header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  .logo{ font-family:var(--font-display); font-size:22px; font-weight:600; }
+  .logo em{font-style:italic; font-weight:300;}
+  .logo-sub{font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--wine); margin-top:2px;}
+  .nav-links{display:flex; gap:18px; align-items:center;}
+  .nav-links a{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding:8px 14px; border:1px solid var(--line); border-radius:2px;}
+  .nav-links a:hover{background:var(--ink); color:var(--cream);}
+  .logout-btn{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    background:none; border:1px solid var(--ink); padding:8px 14px; border-radius:2px; cursor:pointer;
+  }
+  .logout-btn:hover{background:var(--ink); color:var(--cream);}
+
+  .login-screen{
+    max-width:380px; margin:120px auto; padding:40px 32px;
+    background:#fff; border:1px solid var(--line); border-radius:4px;
+  }
+  .login-screen h1{font-family:var(--font-display); font-size:26px; margin-bottom:8px;}
+  .login-screen p{font-size:14px; color:rgba(20,17,15,.65); margin-bottom:24px; line-height:1.5;}
+  .login-screen input{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:2px;
+    font-family:var(--font-mono); font-size:14px; margin-bottom:14px; background:var(--cream);
+  }
+  .login-screen button{
+    width:100%; padding:13px; border:1px solid var(--ink); background:var(--ink); color:var(--cream);
+    font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    border-radius:2px; cursor:pointer;
+  }
+  .login-screen button:hover{background:var(--wine); border-color:var(--wine);}
+  .login-error{color:var(--live); font-size:13px; margin-top:10px; display:none;}
+  .login-error.open{display:block;}
+
+  #app{display:none;}
+  .section-title{font-family:var(--font-display); font-size:24px; font-weight:600; margin:36px 0 18px;}
+
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;}
+  .filter-btn{
+    font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    padding:8px 14px; border-radius:2px; border:1px solid var(--line); background:#fff; cursor:pointer;
+  }
+  .filter-btn.active{background:var(--ink); color:var(--cream); border-color:var(--ink);}
+
+  .orders-table{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:4px; overflow:hidden;}
+  .orders-table th{
+    text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.06em; color:rgba(20,17,15,.55); padding:12px 14px; border-bottom:1px solid var(--line);
+    background:var(--cream-2);
+  }
+  .orders-table td{padding:12px 14px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;}
+  .orders-table tr:last-child td{border-bottom:none;}
+  .orders-table tr{cursor:pointer;}
+  .orders-table tr:hover{background:var(--cream-2);}
+  .cust-name{font-weight:600;}
+  .status-pill{
+    display:inline-block; font-family:var(--font-mono); font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; padding:5px 10px; border-radius:20px; border:1px solid var(--line);
+  }
+  .status-pill.nouvelle{background:#fdf0e5; border-color:#e8b98a; color:#8a4b12;}
+  .status-pill.confirmee{background:#e7f0fb; border-color:#9dc0ec; color:#1a4c8a;}
+  .status-pill.expediee{background:#f1ecfb; border-color:#c3aeee; color:#5a2fa3;}
+  .status-pill.livree{background:#e6f5ea; border-color:#9bd6ac; color:#1f6b34;}
+  .status-pill.annulee{background:#fbe9ea; border-color:#eeadb1; color:#a3202b;}
+  .empty-state{padding:40px; text-align:center; color:rgba(20,17,15,.55); font-size:14px;}
+
+  /* ---------- modal détail commande ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,17,15,.55); z-index:90;
+    display:none; align-items:center; justify-content:center; padding:24px;
+  }
+  .overlay.open{display:flex;}
+  .order-card{
+    background:var(--cream); max-width:640px; width:100%; max-height:88vh; overflow-y:auto;
+    border-radius:4px; padding:30px; position:relative;
+  }
+  .order-close{
+    position:absolute; top:14px; right:14px;
+    background:var(--cream); border:1px solid var(--line); border-radius:50%;
+    width:34px; height:34px; font-size:18px; cursor:pointer; line-height:1;
+  }
+  .order-card h3{font-family:var(--font-display); font-size:22px; margin-bottom:4px;}
+  .order-card .order-date{font-family:var(--font-mono); font-size:11px; color:rgba(20,17,15,.55); margin-bottom:20px;}
+  .order-block{margin-bottom:20px;}
+  .order-block h4{font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:rgba(20,17,15,.55); margin-bottom:8px;}
+  .order-block p{font-size:14px; line-height:1.6;}
+  .order-items{border-top:1px solid var(--line); padding-top:14px;}
+  .order-item-line{display:flex; justify-content:space-between; font-size:13.5px; padding:6px 0;}
+  .order-total{display:flex; justify-content:space-between; font-family:var(--font-display); font-size:18px; font-weight:600; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);}
+  .status-select{
+    margin-top:20px; width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:2px;
+    font-family:var(--font-mono); font-size:13px; background:#fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="login-screen">
+  <h1>Commandes</h1>
+  <p>Entre ta clé admin pour voir les commandes de Blingbling Accessoires.</p>
+  <input type="password" id="admin-key-input" placeholder="Clé admin (ADMIN_KEY)">
+  <button id="login-btn">Se connecter</button>
+  <div class="login-error" id="login-error">Clé invalide ou serveur injoignable.</div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="wrap">
+      <div>
+        <div class="logo">BLINGBLING <em>ACCESSOIRES</em></div>
+        <div class="logo-sub">Commandes</div>
+      </div>
+      <div class="nav-links">
+        <a href="admin-produits.html">Produits</a>
+        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <h2 class="section-title">Commandes (<span id="order-count">0</span>)</h2>
+    <div class="filters" id="filters">
+      <button class="filter-btn active" data-status="">Toutes</button>
+      <button class="filter-btn" data-status="nouvelle">Nouvelle</button>
+      <button class="filter-btn" data-status="confirmee">Confirmée</button>
+      <button class="filter-btn" data-status="expediee">Expédiée</button>
+      <button class="filter-btn" data-status="livree">Livrée</button>
+      <button class="filter-btn" data-status="annulee">Annulée</button>
+    </div>
+
+    <table class="orders-table" id="orders-table">
+      <thead>
+        <tr><th>Client</th><th>Ville</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Date</th></tr>
+      </thead>
+      <tbody id="orders-tbody"></tbody>
+    </table>
+    <div class="empty-state" id="empty-state" style="display:none;">Aucune commande pour l'instant.</div>
+  </div>
+</div>
+
+<div class="overlay" id="order-overlay">
+  <div class="order-card">
+    <button class="order-close" id="order-close">×</button>
+    <h3 id="oc-name"></h3>
+    <div class="order-date" id="oc-date"></div>
+
+    <div class="order-block">
+      <h4>Contact & livraison</h4>
+      <p id="oc-phone"></p>
+      <p id="oc-address"></p>
+    </div>
+
+    <div class="order-block">
+      <h4>Paiement</h4>
+      <p id="oc-payment"></p>
+    </div>
+
+    <div class="order-block order-items">
+      <h4>Articles</h4>
+      <div id="oc-items"></div>
+      <div class="order-total"><span>Total</span><span id="oc-total"></span></div>
+    </div>
+
+    <select class="status-select" id="oc-status">
+      <option value="nouvelle">Nouvelle</option>
+      <option value="confirmee">Confirmée</option>
+      <option value="expediee">Expédiée</option>
+      <option value="livree">Livrée</option>
+      <option value="annulee">Annulée</option>
+    </select>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://blingbling-b7cg.onrender.com';
+
+  let adminKey = localStorage.getItem('bb_admin_key') || '';
+  let orders = [];
+  let currentFilter = '';
+  let openOrderId = null;
+
+  const loginScreen = document.getElementById('login-screen');
+  const app = document.getElementById('app');
+  const loginError = document.getElementById('login-error');
+
+  function adminHeaders(extra = {}) {
+    return Object.assign({ 'Authorization': `Bearer ${adminKey}` }, extra);
+  }
+
+  function formatPrice(millimes){
+    return (millimes / 1000).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + ' DT';
+  }
+  function formatDate(iso){
+    const d = new Date(iso.replace(' ', 'T') + 'Z');
+    return d.toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  }
+  const paymentLabels = { cod: 'Paiement à la livraison', online: 'Paiement en ligne' };
+  const statusLabels = { nouvelle:'Nouvelle', confirmee:'Confirmée', expediee:'Expédiée', livree:'Livrée', annulee:'Annulée' };
+
+  async function tryLogin(key){
+    adminKey = key;
+    try{
+      const res = await fetch(`${API_BASE}/api/orders`, { headers: adminHeaders() });
+      if(res.status === 401){
+        loginError.classList.add('open');
+        return;
+      }
+      localStorage.setItem('bb_admin_key', adminKey);
+      loginError.classList.remove('open');
+      showApp();
+    }catch(err){
+      loginError.classList.add('open');
+    }
+  }
+
+  function showApp(){
+    loginScreen.style.display = 'none';
+    app.style.display = 'block';
+    loadOrders();
+  }
+
+  document.getElementById('login-btn').addEventListener('click', () => {
+    const key = document.getElementById('admin-key-input').value.trim();
+    if(key) tryLogin(key);
+  });
+  document.getElementById('admin-key-input').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('login-btn').click();
+  });
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem('bb_admin_key');
+    adminKey = '';
+    app.style.display = 'none';
+    loginScreen.style.display = 'block';
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.status;
+      loadOrders();
+    });
+  });
+
+  async function loadOrders(){
+    try{
+      const url = currentFilter
+        ? `${API_BASE}/api/orders?status=${encodeURIComponent(currentFilter)}`
+        : `${API_BASE}/api/orders`;
+      const res = await fetch(url, { headers: adminHeaders() });
+      orders = await res.json();
+      renderTable();
+    }catch(err){
+      document.getElementById('orders-tbody').innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('empty-state').textContent = 'Impossible de charger les commandes.';
+    }
+  }
+
+  function renderTable(){
+    document.getElementById('order-count').textContent = orders.length;
+    const tbody = document.getElementById('orders-tbody');
+    if(orders.length === 0){
+      tbody.innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+      return;
+    }
+    document.getElementById('empty-state').style.display = 'none';
+    tbody.innerHTML = orders.map(o => `
+      <tr data-id="${o.id}">
+        <td class="cust-name">${o.customer_name}</td>
+        <td>${o.city}</td>
+        <td>${formatPrice(o.total_millimes)}</td>
+        <td>${paymentLabels[o.payment_method] || o.payment_method}</td>
+        <td><span class="status-pill ${o.status}">${statusLabels[o.status] || o.status}</span></td>
+        <td>${formatDate(o.created_at)}</td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => openOrder(Number(tr.dataset.id)));
+    });
+  }
+
+  async function openOrder(id){
+    openOrderId = id;
+    try{
+      const res = await fetch(`${API_BASE}/api/orders/${id}`, { headers: adminHeaders() });
+      const o = await res.json();
+
+      document.getElementById('oc-name').textContent = o.customer_name;
+      document.getElementById('oc-date').textContent = formatDate(o.created_at);
+      document.getElementById('oc-phone').textContent = `Téléphone : ${o.phone}`;
+      document.getElementById('oc-address').textContent = `${o.address}, ${o.city}`;
+      document.getElementById('oc-payment').textContent = paymentLabels[o.payment_method] || o.payment_method;
+
+      document.getElementById('oc-items').innerHTML = (o.items || []).map(it => `
+        <div class="order-item-line">
+          <span>${it.quantity} × ${it.product_name}</span>
+          <span>${formatPrice(it.unit_price_millimes * it.quantity)}</span>
+        </div>
+      `).join('');
+      document.getElementById('oc-total').textContent = formatPrice(o.total_millimes);
+      document.getElementById('oc-status').value = o.status;
+
+      document.getElementById('order-overlay').classList.add('open');
+    }catch(err){
+      alert("Impossible de charger le détail de la commande.");
+    }
+  }
+
+  document.getElementById('order-close').addEventListener('click', () => {
+    document.getElementById('order-overlay').classList.remove('open');
+  });
+  document.getElementById('order-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'order-overlay') document.getElementById('order-overlay').classList.remove('open');
+  });
+
+  document.getElementById('oc-status').addEventListener('change', async (e) => {
+    const newStatus = e.target.value;
+    try{
+      await fetch(`${API_BASE}/api/orders/${openOrderId}`, {
+        method: 'PATCH',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ status: newStatus }),
+      });
+      loadOrders();
+    }catch(err){
+      alert("Impossible de mettre à jour le statut.");
+    }
+  });
+
+  if(adminKey){ tryLogin(adminKey); }
+</script>
+
+</body>
+</html>

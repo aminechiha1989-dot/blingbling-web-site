@@ -38,6 +38,24 @@
   }
   .logout-btn:hover{background:var(--ink); color:var(--cream);}
 
+  .live-switch{
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--cream); border:1px solid var(--line); padding:8px 14px; border-radius:2px; cursor:pointer;
+  }
+  .live-switch-dot{width:8px; height:8px; border-radius:50%; background:rgba(20,17,15,.3);}
+  .live-switch.on{background:var(--live); border-color:var(--live); color:#fff;}
+  .live-switch.on .live-switch-dot{
+    background:#fff;
+    box-shadow:0 0 0 0 rgba(255,255,255,.6);
+    animation:live-pulse 1.6s infinite;
+  }
+  @keyframes live-pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.6);}
+    70%{box-shadow:0 0 0 7px rgba(255,255,255,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}
+  }
+
   /* ---------- login gate ---------- */
   .login-screen{
     max-width:380px; margin:120px auto; padding:40px 32px;
@@ -137,7 +155,14 @@
         <div class="logo">BLINGBLING <em>ACCESSOIRES</em></div>
         <div class="logo-sub">Espace admin</div>
       </div>
-      <button class="logout-btn" id="logout-btn">Déconnexion</button>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <button class="live-switch" id="live-switch">
+          <span class="live-switch-dot"></span>
+          <span id="live-switch-label">Live : chargement…</span>
+        </button>
+        <a href="admin-commandes.html" style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding:8px 14px; border:1px solid var(--line); border-radius:2px;">Commandes</a>
+        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+      </div>
     </div>
   </header>
 
@@ -238,7 +263,42 @@
     loginScreen.style.display = 'none';
     app.style.display = 'block';
     loadProducts();
+    loadLiveStatus();
   }
+
+  async function loadLiveStatus(){
+    try{
+      const res = await fetch(`${API_BASE}/api/live-status`);
+      const data = await res.json();
+      renderLiveSwitch(data.is_live);
+    }catch(err){
+      document.getElementById('live-switch-label').textContent = 'Live : indisponible';
+    }
+  }
+
+  function renderLiveSwitch(isLive){
+    const btn = document.getElementById('live-switch');
+    const label = document.getElementById('live-switch-label');
+    btn.classList.toggle('on', isLive);
+    label.textContent = isLive ? 'Live en cours — cliquer pour arrêter' : 'Démarrer le live';
+    btn.dataset.live = isLive ? '1' : '0';
+  }
+
+  document.getElementById('live-switch').addEventListener('click', async () => {
+    const btn = document.getElementById('live-switch');
+    const newValue = btn.dataset.live !== '1';
+    try{
+      const res = await fetch(`${API_BASE}/api/live-status`, {
+        method: 'PATCH',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ is_live: newValue }),
+      });
+      const data = await res.json();
+      renderLiveSwitch(data.is_live);
+    }catch(err){
+      alert("Impossible de mettre à jour le statut live.");
+    }
+  });
 
   document.getElementById('login-btn').addEventListener('click', () => {
     const key = document.getElementById('admin-key-input').value.trim();
