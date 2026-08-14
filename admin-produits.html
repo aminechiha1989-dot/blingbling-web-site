@@ -93,6 +93,11 @@
   .field{display:flex; flex-direction:column; gap:6px;}
   .field.full{grid-column:1/-1;}
   .field label{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:rgba(20,17,15,.6);}
+  .photo-upload-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .photo-upload-row .btn.ghost{padding:10px 16px;}
+  #p-image-upload-status{font-family:var(--font-mono); font-size:11.5px; color:rgba(20,17,15,.6);}
+  #p-image-upload-status.error{color:var(--live);}
+  #p-image-upload-status.success{color:#2e7d32;}
   .field input, .field textarea, .field select{
     padding:11px 12px; border:1px solid var(--line); border-radius:2px;
     font-family:var(--font-body); font-size:14px; background:var(--cream);
@@ -181,11 +186,16 @@
             <textarea id="p-description" rows="2"></textarea>
           </div>
           <div class="field full">
-            <label>Photo (URL) — héberge-la sur imgbb.com ou Cloudinary, puis colle le lien ici</label>
-            <input type="url" id="p-image" placeholder="https://...">
+            <label>Photo</label>
+            <div class="photo-upload-row">
+              <input type="file" id="p-image-file" accept="image/*" style="display:none;">
+              <button type="button" class="btn ghost" id="p-image-upload-btn">Choisir une photo sur mon PC</button>
+              <span id="p-image-upload-status"></span>
+            </div>
+            <img id="p-image-preview" src="" alt="" style="display:none; max-width:120px; border-radius:3px; margin-top:10px;">
+            <input type="url" id="p-image" placeholder="ou colle un lien direct ici" style="margin-top:10px;">
           </div>
-          <div class="field">
-            <label>Prix (DT)</label>
+          <div class="field">            <label>Prix (DT)</label>
             <input type="number" id="p-price" step="0.001" min="0" required>
           </div>
           <div class="field">
@@ -224,6 +234,8 @@
 
 <script>
   const API_BASE = 'https://blingbling-b7cg.onrender.com';
+  const CLOUDINARY_CLOUD_NAME = 'ywyysh01';
+  const CLOUDINARY_UPLOAD_PRESET = 'upload image';
 
   let adminKey = localStorage.getItem('bb_admin_key') || '';
   let products = [];
@@ -385,6 +397,8 @@
     document.getElementById('p-name').value = p.name;
     document.getElementById('p-description').value = p.description || '';
     document.getElementById('p-image').value = p.image_url || '';
+    document.getElementById('p-image-preview').src = p.image_url || '';
+    document.getElementById('p-image-preview').style.display = p.image_url ? 'block' : 'none';
     document.getElementById('p-price').value = (p.price_millimes / 1000);
     document.getElementById('p-stock').value = p.stock;
     document.getElementById('p-category').value = p.category || '';
@@ -402,7 +416,45 @@
     document.getElementById('form-title').textContent = 'Ajouter un produit';
     document.getElementById('submit-btn').textContent = 'Ajouter le produit';
     document.getElementById('cancel-edit-btn').style.display = 'none';
+    document.getElementById('p-image-preview').style.display = 'none';
+    document.getElementById('p-image-upload-status').textContent = '';
+    document.getElementById('p-image-upload-status').className = '';
   }
+
+  document.getElementById('p-image-upload-btn').addEventListener('click', () => {
+    document.getElementById('p-image-file').click();
+  });
+
+  document.getElementById('p-image-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById('p-image-upload-status');
+    statusEl.className = '';
+    statusEl.textContent = 'Envoi en cours…';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    try{
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if(!res.ok || !data.secure_url){
+        throw new Error(data.error?.message || 'Échec de l\'envoi');
+      }
+      document.getElementById('p-image').value = data.secure_url;
+      document.getElementById('p-image-preview').src = data.secure_url;
+      document.getElementById('p-image-preview').style.display = 'block';
+      statusEl.textContent = 'Photo envoyée ✓';
+      statusEl.className = 'success';
+    }catch(err){
+      statusEl.textContent = 'Échec de l\'envoi : ' + err.message;
+      statusEl.className = 'error';
+    }
+  });
 
   document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
 
