@@ -860,6 +860,30 @@
   checkLiveStatus();
   setInterval(checkLiveStatus, 30000); // revérifie toutes les 30 secondes
 
+  async function loadSiteSettings(){
+    try{
+      const res = await fetch(`${API_BASE}/api/site-settings`);
+      const s = await res.json();
+      const root = document.documentElement.style;
+      if(s.color_wine) root.setProperty('--wine', s.color_wine);
+      if(s.color_gold) root.setProperty('--gold', s.color_gold);
+      if(s.color_cream) root.setProperty('--cream', s.color_cream);
+      if(s.color_live) root.setProperty('--live', s.color_live);
+      if(s.hero_title) document.querySelector('.hero h1').innerHTML = s.hero_title;
+      if(s.hero_subtitle) document.querySelector('.hero p.lead').textContent = s.hero_subtitle;
+      if(s.next_live_text){
+        document.querySelectorAll('.ticker-item').forEach(el => {
+          if(el.textContent.trim().startsWith('Prochain live')){
+            el.innerHTML = s.next_live_text + ' <span class="sep">/</span>';
+          }
+        });
+      }
+    }catch(err){
+      // silencieux : si l'API est indisponible, on garde les valeurs par défaut du CSS
+    }
+  }
+  loadSiteSettings();
+
   loadProducts();
 </script>
 
