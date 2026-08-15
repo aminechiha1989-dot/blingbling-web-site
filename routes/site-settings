@@ -1,0 +1,43 @@
+const express = require('express');
+const { client } = require('../index');
+const { requireAdmin } = require('../middleware/auth');
+
+const router = express.Router();
+
+// GET /api/site-settings — public, consulté par index.html au chargement.
+router.get('/', async (req, res) => {
+  try {
+    const result = await client.execute({
+      sql: 'SELECT * FROM site_settings WHERE id = 1',
+      args: [],
+    });
+    res.json(result.rows[0] || {});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// PATCH /api/site-settings — protégé, modifié depuis la page admin.
+router.patch('/', requireAdmin, async (req, res) => {
+  const fields = ['color_wine', 'color_gold', 'color_cream', 'color_live', 'color_ink', 'hero_title', 'hero_subtitle', 'next_live_text'];
+  const updates = fields.filter(f => req.body[f] !== undefined);
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
+  }
+  const setClause = updates.map(f => `${f} = ?`).join(', ');
+  const args = updates.map(f => req.body[f]);
+  try {
+    await client.execute({
+      sql: `UPDATE site_settings SET ${setClause}, updated_at = datetime('now') WHERE id = 1`,
+      args,
+    });
+    const result = await client.execute({ sql: 'SELECT * FROM site_settings WHERE id = 1', args: [] });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+module.exports = router;
