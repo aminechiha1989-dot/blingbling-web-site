@@ -231,43 +231,60 @@
     <div class="empty-state" id="empty-state" style="display:none;">Aucun produit pour l'instant — ajoute le premier ci-dessus.</div>
 
     <h2 class="section-title">Personnalisation du site</h2>
-    <div class="form-card">
-      <div class="form-grid">
-        <div class="field">
-          <label>Couleur bordeaux</label>
-          <input type="color" id="s-color-wine">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="field">
+            <label>Couleur bordeaux (titres, boutons)</label>
+            <input type="color" id="s-color-wine">
+          </div>
+          <div class="field">
+            <label>Couleur dorée (accents)</label>
+            <input type="color" id="s-color-gold">
+          </div>
+          <div class="field">
+            <label>Couleur crème (fond du site)</label>
+            <input type="color" id="s-color-cream">
+          </div>
+          <div class="field">
+            <label>Couleur "live" (badges, clignotement)</label>
+            <input type="color" id="s-color-live">
+          </div>
+          <div class="field full">
+            <label>Titre principal (grand texte en haut du site)</label>
+            <textarea id="s-hero-title" rows="2"></textarea>
+          </div>
+          <div class="field full">
+            <label>Sous-titre (petit texte sous le titre)</label>
+            <textarea id="s-hero-subtitle" rows="2"></textarea>
+          </div>
+          <div class="field full">
+            <label>Texte du bandeau défilant ("Prochain live : ...")</label>
+            <input type="text" id="s-next-live-text">
+          </div>
         </div>
-        <div class="field">
-          <label>Couleur dorée</label>
-          <input type="color" id="s-color-gold">
+        <div class="form-actions">
+          <button type="button" class="btn" id="save-settings-btn">Publier ces changements sur le site</button>
         </div>
-        <div class="field">
-          <label>Couleur crème (fond)</label>
-          <input type="color" id="s-color-cream">
-        </div>
-        <div class="field">
-          <label>Couleur "live"</label>
-          <input type="color" id="s-color-live">
-        </div>
-        <div class="field full">
-          <label>Titre du hero (HTML autorisé, ex: &lt;br&gt; &lt;i&gt;)</label>
-          <textarea id="s-hero-title" rows="2"></textarea>
-        </div>
-        <div class="field full">
-          <label>Sous-titre du hero</label>
-          <textarea id="s-hero-subtitle" rows="2"></textarea>
-        </div>
-        <div class="field full">
-          <label>Texte "Prochain live"</label>
-          <input type="text" id="s-next-live-text">
+        <div class="form-msg" id="settings-msg"></div>
+        <p style="font-size:12px; color:rgba(20,17,15,.55); margin-top:10px;">L'aperçu à droite se met à jour tout de suite. Rien n'est visible par tes visiteurs tant que tu n'as pas cliqué sur "Publier".</p>
+      </div>
+
+      <div id="preview-box" style="position:sticky; top:20px; border:1px solid var(--line); border-radius:4px; overflow:hidden; background:#fff;">
+        <div style="background:var(--cream-2); padding:8px 14px; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:rgba(20,17,15,.55); border-bottom:1px solid var(--line);">Aperçu en direct — pas encore publié</div>
+        <div id="preview-inner" style="padding:34px 28px;">
+          <div id="prev-ticker" style="font-family:var(--font-mono); font-size:11px; padding:7px 10px; border-radius:2px; margin-bottom:20px;"></div>
+          <h3 id="prev-title" style="font-family:var(--font-display); font-weight:500; font-size:28px; line-height:1.05; margin-bottom:12px;"></h3>
+          <p id="prev-subtitle" style="font-size:13px; line-height:1.5; color:rgba(20,17,15,.72); margin-bottom:16px;"></p>
+          <div style="display:flex; gap:10px;">
+            <span id="prev-btn1" style="font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:9px 16px; border-radius:2px;">Voir la collection</span>
+            <span id="prev-btn2" style="font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:9px 16px; border-radius:2px; border:1px solid;">Rejoindre le live →</span>
+          </div>
         </div>
       </div>
-      <div class="form-actions">
-        <button type="button" class="btn" id="save-settings-btn">Enregistrer</button>
-      </div>
-      <div class="form-msg" id="settings-msg"></div>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -545,6 +562,45 @@
     }
   });
 
+  const previewFields = ['s-color-wine', 's-color-gold', 's-color-cream', 's-color-live', 's-hero-title', 's-hero-subtitle', 's-next-live-text'];
+
+  function updatePreview(){
+    const wine = document.getElementById('s-color-wine').value;
+    const gold = document.getElementById('s-color-gold').value;
+    const cream = document.getElementById('s-color-cream').value;
+    const live = document.getElementById('s-color-live').value;
+    const title = document.getElementById('s-hero-title').value;
+    const subtitle = document.getElementById('s-hero-subtitle').value;
+    const nextLive = document.getElementById('s-next-live-text').value;
+
+    const box = document.getElementById('preview-box');
+    box.style.background = cream;
+
+    const ticker = document.getElementById('prev-ticker');
+    ticker.style.background = '#14110F';
+    ticker.style.color = cream;
+    ticker.textContent = nextLive;
+
+    document.getElementById('prev-title').innerHTML = title;
+    document.getElementById('prev-title').style.color = '#14110F';
+    document.getElementById('prev-subtitle').textContent = subtitle;
+
+    const btn1 = document.getElementById('prev-btn1');
+    btn1.style.background = '#14110F';
+    btn1.style.color = cream;
+
+    const btn2 = document.getElementById('prev-btn2');
+    btn2.style.borderColor = '#14110F';
+    btn2.style.color = '#14110F';
+
+    document.getElementById('prev-title').querySelectorAll('i').forEach(el => el.style.color = wine);
+    ticker.style.borderLeft = `4px solid ${live}`;
+  }
+
+  previewFields.forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+  });
+
   async function loadSettings(){
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`);
@@ -556,6 +612,7 @@
       document.getElementById('s-hero-title').value = s.hero_title || '';
       document.getElementById('s-hero-subtitle').value = s.hero_subtitle || '';
       document.getElementById('s-next-live-text').value = s.next_live_text || '';
+      updatePreview();
     }catch(err){
       document.getElementById('settings-msg').textContent = 'Impossible de charger les réglages.';
       document.getElementById('settings-msg').className = 'form-msg error';
@@ -587,7 +644,7 @@
         msg.classList.add('error');
         return;
       }
-      msg.textContent = 'Réglages enregistrés ✓';
+      msg.textContent = 'Publié sur le site ✓ — recharge index.html pour le voir en ligne.';
       msg.classList.add('success');
     }catch(err){
       msg.textContent = 'Impossible de contacter le serveur.';
