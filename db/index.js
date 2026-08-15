@@ -65,5 +65,23 @@ async function initDb() {
     INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
   `);
 }
-
+// Réglages personnalisables du site (couleurs, textes) — une seule ligne (id=1)
+  // modifiable depuis l'admin, appliquée automatiquement sur index.html.
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      color_wine TEXT NOT NULL DEFAULT '#6B1E3C',
+      color_gold TEXT NOT NULL DEFAULT '#B9925A',
+      color_cream TEXT NOT NULL DEFAULT '#F3ECDF',
+      color_live TEXT NOT NULL DEFAULT '#FF3B6E',
+      color_ink TEXT NOT NULL DEFAULT '#14110F',
+      hero_title TEXT NOT NULL DEFAULT 'La mode qui se<br>découvre <i>en direct</i>.',
+      hero_subtitle TEXT NOT NULL DEFAULT 'Chaque pièce a d''abord été montrée en live avant d''arriver ici. Ce que tu vois est ce que tu portes — sans surprise, avec du style.',
+      next_live_text TEXT NOT NULL DEFAULT 'Prochain live : ce soir 20h',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await client.execute(`
+    INSERT OR IGNORE INTO site_settings (id) VALUES (1)
+  `);
 module.exports = { client, initDb };
