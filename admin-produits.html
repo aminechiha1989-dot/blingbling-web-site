@@ -229,6 +229,44 @@
       <tbody id="products-tbody"></tbody>
     </table>
     <div class="empty-state" id="empty-state" style="display:none;">Aucun produit pour l'instant — ajoute le premier ci-dessus.</div>
+
+    <h2 class="section-title">Personnalisation du site</h2>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="field">
+          <label>Couleur bordeaux</label>
+          <input type="color" id="s-color-wine">
+        </div>
+        <div class="field">
+          <label>Couleur dorée</label>
+          <input type="color" id="s-color-gold">
+        </div>
+        <div class="field">
+          <label>Couleur crème (fond)</label>
+          <input type="color" id="s-color-cream">
+        </div>
+        <div class="field">
+          <label>Couleur "live"</label>
+          <input type="color" id="s-color-live">
+        </div>
+        <div class="field full">
+          <label>Titre du hero (HTML autorisé, ex: &lt;br&gt; &lt;i&gt;)</label>
+          <textarea id="s-hero-title" rows="2"></textarea>
+        </div>
+        <div class="field full">
+          <label>Sous-titre du hero</label>
+          <textarea id="s-hero-subtitle" rows="2"></textarea>
+        </div>
+        <div class="field full">
+          <label>Texte "Prochain live"</label>
+          <input type="text" id="s-next-live-text">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn" id="save-settings-btn">Enregistrer</button>
+      </div>
+      <div class="form-msg" id="settings-msg"></div>
+    </div>
   </div>
 </div>
 
@@ -276,6 +314,7 @@
     app.style.display = 'block';
     loadProducts();
     loadLiveStatus();
+    loadSettings();
   }
 
   async function loadLiveStatus(){
@@ -503,6 +542,56 @@
     }catch(err){
       formMsg.textContent = 'Impossible de contacter le serveur.';
       formMsg.classList.add('error');
+    }
+  });
+
+  async function loadSettings(){
+    try{
+      const res = await fetch(`${API_BASE}/api/site-settings`);
+      const s = await res.json();
+      document.getElementById('s-color-wine').value = s.color_wine || '#6B1E3C';
+      document.getElementById('s-color-gold').value = s.color_gold || '#B9925A';
+      document.getElementById('s-color-cream').value = s.color_cream || '#F3ECDF';
+      document.getElementById('s-color-live').value = s.color_live || '#FF3B6E';
+      document.getElementById('s-hero-title').value = s.hero_title || '';
+      document.getElementById('s-hero-subtitle').value = s.hero_subtitle || '';
+      document.getElementById('s-next-live-text').value = s.next_live_text || '';
+    }catch(err){
+      document.getElementById('settings-msg').textContent = 'Impossible de charger les réglages.';
+      document.getElementById('settings-msg').className = 'form-msg error';
+    }
+  }
+
+  document.getElementById('save-settings-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('settings-msg');
+    msg.textContent = '';
+    msg.className = 'form-msg';
+    const payload = {
+      color_wine: document.getElementById('s-color-wine').value,
+      color_gold: document.getElementById('s-color-gold').value,
+      color_cream: document.getElementById('s-color-cream').value,
+      color_live: document.getElementById('s-color-live').value,
+      hero_title: document.getElementById('s-hero-title').value,
+      hero_subtitle: document.getElementById('s-hero-subtitle').value,
+      next_live_text: document.getElementById('s-next-live-text').value,
+    };
+    try{
+      const res = await fetch(`${API_BASE}/api/site-settings`, {
+        method: 'PATCH',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if(!res.ok){
+        msg.textContent = data.error || "Une erreur s'est produite.";
+        msg.classList.add('error');
+        return;
+      }
+      msg.textContent = 'Réglages enregistrés ✓';
+      msg.classList.add('success');
+    }catch(err){
+      msg.textContent = 'Impossible de contacter le serveur.';
+      msg.classList.add('error');
     }
   });
 
