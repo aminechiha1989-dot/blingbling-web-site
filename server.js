@@ -23,7 +23,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/live-status', liveStatusRouter);
-
+app.use('/api/site-settings', require('./routes/site-settings'));
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));
 
 const PORT = process.env.PORT || 4000;
