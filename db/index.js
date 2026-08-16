@@ -6,9 +6,6 @@ const client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// Crée les tables si elles n'existent pas encore. Appelée une fois au démarrage
-// du serveur (voir server.js) — le client Turso étant asynchrone, on ne peut plus
-// créer les tables de façon synchrone comme avec better-sqlite3.
 async function initDb() {
   await client.execute(`
     CREATE TABLE IF NOT EXISTS products (
@@ -51,9 +48,6 @@ async function initDb() {
     )
   `);
 
-  // Statut "live en cours" — une seule ligne (id=1) que l'admin bascule
-  // depuis la page admin. Le site public la consulte pour faire clignoter
-  // le bouton TikTok.
   await client.execute(`
     CREATE TABLE IF NOT EXISTS site_status (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -64,9 +58,7 @@ async function initDb() {
   await client.execute(`
     INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
   `);
-}
-// Réglages personnalisables du site (couleurs, textes) — une seule ligne (id=1)
-  // modifiable depuis l'admin, appliquée automatiquement sur index.html.
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS site_settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -75,8 +67,8 @@ async function initDb() {
       color_cream TEXT NOT NULL DEFAULT '#F3ECDF',
       color_live TEXT NOT NULL DEFAULT '#FF3B6E',
       color_ink TEXT NOT NULL DEFAULT '#14110F',
-      hero_title TEXT NOT NULL DEFAULT 'La mode qui se<br>découvre <i>en direct</i>.',
-      hero_subtitle TEXT NOT NULL DEFAULT 'Chaque pièce a d''abord été montrée en live avant d''arriver ici. Ce que tu vois est ce que tu portes — sans surprise, avec du style.',
+      hero_title TEXT NOT NULL DEFAULT 'La mode qui se decouvre en direct.',
+      hero_subtitle TEXT NOT NULL DEFAULT 'Chaque piece a d''abord ete montree en live avant d''arriver ici.',
       next_live_text TEXT NOT NULL DEFAULT 'Prochain live : ce soir 20h',
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
@@ -84,4 +76,6 @@ async function initDb() {
   await client.execute(`
     INSERT OR IGNORE INTO site_settings (id) VALUES (1)
   `);
+}
+
 module.exports = { client, initDb };
