@@ -70,6 +70,7 @@ async function initDb() {
       hero_title TEXT NOT NULL DEFAULT 'La mode qui se decouvre en direct.',
       hero_subtitle TEXT NOT NULL DEFAULT 'Chaque piece a d''abord ete montree en live avant d''arriver ici.',
       next_live_text TEXT NOT NULL DEFAULT 'Prochain live : ce soir 20h',
+      hero_image_url TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
