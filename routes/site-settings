@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 
 // PATCH /api/site-settings — protégé, modifié depuis la page admin.
 router.patch('/', requireAdmin, async (req, res) => {
-  const fields = ['color_wine', 'color_gold', 'color_cream', 'color_live', 'color_ink', 'hero_title', 'hero_subtitle', 'next_live_text'];
+  const fields = ['color_wine', 'color_gold', 'color_cream', 'color_live', 'color_ink', 'hero_title', 'hero_subtitle', 'next_live_text', 'hero_image_url'];
   const updates = fields.filter(f => req.body[f] !== undefined);
   if (updates.length === 0) {
     return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
