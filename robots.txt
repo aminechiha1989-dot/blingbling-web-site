@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aminechiha1989-dot.github.io/blingbling-web-site/sitemap.xml
