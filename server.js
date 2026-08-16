@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
-const { initDb } = require('./index');
+const { initDb } = require('./db');
 const productsRouter = require('./routes/products');
 const ordersRouter = require('./routes/orders');
 const paymentsRouter = require('./routes/payments');
