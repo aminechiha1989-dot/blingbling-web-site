@@ -277,6 +277,69 @@
             <label>Texte du bandeau défilant ("Prochain live : ...")</label>
             <input type="text" id="s-next-live-text">
           </div>
+
+          <div class="field full" style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <label style="font-weight:600;">Catégorie 1</label>
+          </div>
+          <div class="field">
+            <label>Titre</label>
+            <input type="text" id="s-cat1-title">
+          </div>
+          <div class="field">
+            <label>Photo</label>
+            <img id="cat1-image-preview" src="" alt="" style="display:none; max-width:120px; border-radius:4px; margin-bottom:8px;">
+            <input type="file" id="cat1-image-file" accept="image/*" style="display:none;">
+            <button type="button" class="btn" id="cat1-image-upload-btn" style="padding:8px 14px; font-size:11px;">Choisir une photo</button>
+            <p id="cat1-image-status" style="margin-top:6px; font-size:11.5px;"></p>
+          </div>
+
+          <div class="field full" style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <label style="font-weight:600;">Catégorie 2</label>
+          </div>
+          <div class="field">
+            <label>Titre</label>
+            <input type="text" id="s-cat2-title">
+          </div>
+          <div class="field">
+            <label>Photo</label>
+            <img id="cat2-image-preview" src="" alt="" style="display:none; max-width:120px; border-radius:4px; margin-bottom:8px;">
+            <input type="file" id="cat2-image-file" accept="image/*" style="display:none;">
+            <button type="button" class="btn" id="cat2-image-upload-btn" style="padding:8px 14px; font-size:11px;">Choisir une photo</button>
+            <p id="cat2-image-status" style="margin-top:6px; font-size:11.5px;"></p>
+          </div>
+
+          <div class="field full" style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <label style="font-weight:600;">Catégorie 3</label>
+          </div>
+          <div class="field">
+            <label>Titre</label>
+            <input type="text" id="s-cat3-title">
+          </div>
+          <div class="field">
+            <label>Photo</label>
+            <img id="cat3-image-preview" src="" alt="" style="display:none; max-width:120px; border-radius:4px; margin-bottom:8px;">
+            <input type="file" id="cat3-image-file" accept="image/*" style="display:none;">
+            <button type="button" class="btn" id="cat3-image-upload-btn" style="padding:8px 14px; font-size:11px;">Choisir une photo</button>
+            <p id="cat3-image-status" style="margin-top:6px; font-size:11.5px;"></p>
+          </div>
+
+          <div class="field full" style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <label style="font-weight:600;">Statistiques (les 4 chiffres sous le hero)</label>
+          </div>
+          <div class="field"><label>Stat 1 — chiffre</label><input type="text" id="s-stat1-num"></div>
+          <div class="field"><label>Stat 1 — légende</label><input type="text" id="s-stat1-label"></div>
+          <div class="field"><label>Stat 2 — chiffre</label><input type="text" id="s-stat2-num"></div>
+          <div class="field"><label>Stat 2 — légende</label><input type="text" id="s-stat2-label"></div>
+          <div class="field"><label>Stat 3 — chiffre</label><input type="text" id="s-stat3-num"></div>
+          <div class="field"><label>Stat 3 — légende</label><input type="text" id="s-stat3-label"></div>
+          <div class="field"><label>Stat 4 — chiffre</label><input type="text" id="s-stat4-num"></div>
+          <div class="field"><label>Stat 4 — légende</label><input type="text" id="s-stat4-label"></div>
+
+          <div class="field full" style="border-top:1px solid var(--line); padding-top:14px; margin-top:6px;">
+            <label style="font-weight:600;">Pied de page</label>
+          </div>
+          <div class="field"><label>Texte du bas (copyright)</label><input type="text" id="s-footer-copyright"></div>
+          <div class="field"><label>Adresse / ville</label><input type="text" id="s-footer-address"></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn" id="save-settings-btn">Publier ces changements sur le site</button>
@@ -663,6 +726,51 @@
     }
   });
 
+  function setupCategoryImageUpload(n){
+    document.getElementById(`cat${n}-image-upload-btn`).addEventListener('click', () => {
+      document.getElementById(`cat${n}-image-file`).click();
+    });
+    document.getElementById(`cat${n}-image-file`).addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const statusEl = document.getElementById(`cat${n}-image-status`);
+      statusEl.className = '';
+      statusEl.textContent = 'Envoi en cours…';
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      try{
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if(!res.ok || !data.secure_url) throw new Error(data.error?.message || 'Échec de l\'envoi');
+        currentSettings[`cat${n}_image_url`] = data.secure_url;
+        document.getElementById(`cat${n}-image-preview`).src = data.secure_url;
+        document.getElementById(`cat${n}-image-preview`).style.display = 'block';
+        statusEl.textContent = 'Envoi en cours vers le site…';
+        const saveRes = await fetch(`${API_BASE}/api/site-settings`, {
+          method: 'PATCH',
+          headers: adminHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ [`cat${n}_image_url`]: data.secure_url }),
+        });
+        if(!saveRes.ok){
+          const errData = await saveRes.json().catch(() => ({}));
+          throw new Error(errData.error || 'Échec de la publication');
+        }
+        statusEl.textContent = 'Photo publiée ✓';
+        statusEl.className = 'success';
+      }catch(err){
+        statusEl.textContent = 'Échec : ' + err.message;
+        statusEl.className = 'error';
+      }
+    });
+  }
+  setupCategoryImageUpload(1);
+  setupCategoryImageUpload(2);
+  setupCategoryImageUpload(3);
+
   async function loadSettings(){
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`);
@@ -674,6 +782,22 @@
       document.getElementById('s-hero-title').value = s.hero_title || '';
       document.getElementById('s-hero-subtitle').value = s.hero_subtitle || '';
       document.getElementById('s-next-live-text').value = s.next_live_text || '';
+      document.getElementById('s-cat1-title').value = s.cat1_title || '';
+      document.getElementById('s-cat2-title').value = s.cat2_title || '';
+      document.getElementById('s-cat3-title').value = s.cat3_title || '';
+      if(s.cat1_image_url){ document.getElementById('cat1-image-preview').src = s.cat1_image_url; document.getElementById('cat1-image-preview').style.display = 'block'; }
+      if(s.cat2_image_url){ document.getElementById('cat2-image-preview').src = s.cat2_image_url; document.getElementById('cat2-image-preview').style.display = 'block'; }
+      if(s.cat3_image_url){ document.getElementById('cat3-image-preview').src = s.cat3_image_url; document.getElementById('cat3-image-preview').style.display = 'block'; }
+      document.getElementById('s-stat1-num').value = s.stat1_num || '';
+      document.getElementById('s-stat1-label').value = s.stat1_label || '';
+      document.getElementById('s-stat2-num').value = s.stat2_num || '';
+      document.getElementById('s-stat2-label').value = s.stat2_label || '';
+      document.getElementById('s-stat3-num').value = s.stat3_num || '';
+      document.getElementById('s-stat3-label').value = s.stat3_label || '';
+      document.getElementById('s-stat4-num').value = s.stat4_num || '';
+      document.getElementById('s-stat4-label').value = s.stat4_label || '';
+      document.getElementById('s-footer-copyright').value = s.footer_copyright || '';
+      document.getElementById('s-footer-address').value = s.footer_address || '';
       if(s.hero_image_url){
         document.getElementById('hero-image-preview').src = s.hero_image_url;
         document.getElementById('hero-image-preview').style.display = 'block';
@@ -697,6 +821,19 @@
       hero_title: document.getElementById('s-hero-title').value,
       hero_subtitle: document.getElementById('s-hero-subtitle').value,
       next_live_text: document.getElementById('s-next-live-text').value,
+      cat1_title: document.getElementById('s-cat1-title').value,
+      cat2_title: document.getElementById('s-cat2-title').value,
+      cat3_title: document.getElementById('s-cat3-title').value,
+      stat1_num: document.getElementById('s-stat1-num').value,
+      stat1_label: document.getElementById('s-stat1-label').value,
+      stat2_num: document.getElementById('s-stat2-num').value,
+      stat2_label: document.getElementById('s-stat2-label').value,
+      stat3_num: document.getElementById('s-stat3-num').value,
+      stat3_label: document.getElementById('s-stat3-label').value,
+      stat4_num: document.getElementById('s-stat4-num').value,
+      stat4_label: document.getElementById('s-stat4-label').value,
+      footer_copyright: document.getElementById('s-footer-copyright').value,
+      footer_address: document.getElementById('s-footer-address').value,
     };
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`, {
