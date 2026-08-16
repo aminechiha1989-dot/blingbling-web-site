@@ -449,16 +449,7 @@
   </nav>
   <div class="ticker-bar">
     <div class="ticker-track">
-      <span class="ticker-item"><span class="tag">● LIVE</span> Sac Camille — 89 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Collier Étoile — 45 DT <span class="sep">/</span></span>
-      <span class="ticker-item"><span class="tag">● LIVE</span> Veste Jasmine — 210 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Boucles Lune — 38 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Prochain live : ce soir 20h <span class="sep">/</span></span>
-      <span class="ticker-item"><span class="tag">● LIVE</span> Sac Camille — 89 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Collier Étoile — 45 DT <span class="sep">/</span></span>
-      <span class="ticker-item"><span class="tag">● LIVE</span> Veste Jasmine — 210 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Boucles Lune — 38 DT <span class="sep">/</span></span>
-      <span class="ticker-item">Prochain live : ce soir 20h <span class="sep">/</span></span>
+      <span class="ticker-item">Chargement…</span>
     </div>
   </div>
 </header>
@@ -667,9 +658,29 @@
       const res = await fetch(`${API_BASE}/api/products`);
       products = await res.json();
       renderProducts();
+      buildTicker();
     }catch(err){
       grid.innerHTML = '<p style="font-family:var(--font-mono); font-size:13px; color:var(--live);">Impossible de charger les produits. Vérifie que le backend est bien en ligne.</p>';
     }
+  }
+
+  let siteNextLiveText = 'Prochain live : ce soir 20h';
+
+  function buildTicker(){
+    const track = document.querySelector('.ticker-track');
+    if(!track) return;
+
+    const newest = [...products]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 8);
+
+    const itemsHtml = newest.map(p => `<span class="ticker-item">${p.is_live ? '<span class="tag">● LIVE</span> ' : ''}${p.name} — ${formatPrice(p.price_millimes)} <span class="sep">/</span></span>`).join('');
+
+    const editAttrs = (typeof EDIT_MODE !== 'undefined' && EDIT_MODE) ? ' data-editable="next_live_text" contenteditable="true"' : '';
+    const nextLiveHtml = `<span class="ticker-item"${editAttrs}>${siteNextLiveText} <span class="sep">/</span></span>`;
+
+    const fullSet = itemsHtml + nextLiveHtml;
+    track.innerHTML = newest.length ? (fullSet + fullSet) : (nextLiveHtml + nextLiveHtml);
   }
 
   let activeCategory = null;
@@ -917,11 +928,8 @@
       if(s.hero_title) document.querySelector('.hero h1').innerHTML = s.hero_title;
       if(s.hero_subtitle) document.querySelector('.hero p.lead').textContent = s.hero_subtitle;
       if(s.next_live_text){
-        document.querySelectorAll('.ticker-item').forEach(el => {
-          if(el.textContent.trim().startsWith('Prochain live')){
-            el.innerHTML = s.next_live_text + ' <span class="sep">/</span>';
-          }
-        });
+        siteNextLiveText = s.next_live_text;
+        buildTicker();
       }
       if(s.hero_image_url){
         const heroVisual = document.querySelector('.hero-visual');
@@ -955,12 +963,7 @@
     document.querySelector('.hero h1').setAttribute('contenteditable', 'true');
     document.querySelector('.hero p.lead').setAttribute('data-editable', 'hero_subtitle');
     document.querySelector('.hero p.lead').setAttribute('contenteditable', 'true');
-    document.querySelectorAll('.ticker-item').forEach(el => {
-      if(el.textContent.trim().startsWith('Prochain live')){
-        el.setAttribute('data-editable', 'next_live_text');
-        el.setAttribute('contenteditable', 'true');
-      }
-    });
+    buildTicker();
 
     const bar = document.createElement('div');
     bar.id = 'edit-toolbar';
