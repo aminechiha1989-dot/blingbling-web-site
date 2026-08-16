@@ -907,6 +907,10 @@
           }
         });
       }
+      if(s.hero_image_url){
+        const heroVisual = document.querySelector('.hero-visual');
+        if(heroVisual) heroVisual.style.backgroundImage = `url('${s.hero_image_url}')`;
+      }
     }catch(err){
       // silencieux : si l'API est indisponible, on garde les valeurs par défaut du CSS
     }

@@ -236,6 +236,13 @@
     <div class="empty-state" id="empty-state" style="display:none;">Aucun produit pour l'instant — ajoute le premier ci-dessus.</div>
 
     <h2 class="section-title">Personnalisation du site</h2>
+    <div class="form-card" style="margin-bottom:24px;">
+      <label style="display:block; margin-bottom:10px; font-weight:600;">Image d'accueil (grande photo en haut du site)</label>
+      <img id="hero-image-preview" src="" alt="" style="display:none; max-width:220px; border-radius:4px; margin-bottom:12px;">
+      <input type="file" id="hero-image-file" accept="image/*" style="display:none;">
+      <button type="button" class="btn" id="hero-image-upload-btn">Choisir une photo</button>
+      <p id="hero-image-upload-status" style="margin-top:8px; font-size:12.5px;"></p>
+    </div>
     <p style="margin-bottom:16px;">
       <a id="edit-live-link" href="https://aminechiha1989-dot.github.io/blingbling-web-site/?edit=1" target="_blank" class="btn" style="display:inline-block; text-decoration:none;">✎ Modifier directement sur le site en ligne</a>
     </p>
@@ -609,6 +616,52 @@
     document.getElementById(id).addEventListener('input', updatePreview);
   });
 
+  document.getElementById('hero-image-upload-btn').addEventListener('click', () => {
+    document.getElementById('hero-image-file').click();
+  });
+
+  document.getElementById('hero-image-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById('hero-image-upload-status');
+    statusEl.className = '';
+    statusEl.textContent = 'Envoi en cours…';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    try{
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if(!res.ok || !data.secure_url){
+        throw new Error(data.error?.message || 'Échec de l\'envoi');
+      }
+      currentSettings.hero_image_url = data.secure_url;
+      document.getElementById('hero-image-preview').src = data.secure_url;
+      document.getElementById('hero-image-preview').style.display = 'block';
+      statusEl.textContent = 'Envoi en cours vers le site…';
+
+      const saveRes = await fetch(`${API_BASE}/api/site-settings`, {
+        method: 'PATCH',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ hero_image_url: data.secure_url }),
+      });
+      if(!saveRes.ok){
+        const errData = await saveRes.json().catch(() => ({}));
+        throw new Error(errData.error || 'Échec de la publication');
+      }
+      statusEl.textContent = 'Image d\'accueil publiée ✓';
+      statusEl.className = 'success';
+    }catch(err){
+      statusEl.textContent = 'Échec : ' + err.message;
+      statusEl.className = 'error';
+    }
+  });
+
   async function loadSettings(){
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`);
@@ -620,6 +673,10 @@
       document.getElementById('s-hero-title').value = s.hero_title || '';
       document.getElementById('s-hero-subtitle').value = s.hero_subtitle || '';
       document.getElementById('s-next-live-text').value = s.next_live_text || '';
+      if(s.hero_image_url){
+        document.getElementById('hero-image-preview').src = s.hero_image_url;
+        document.getElementById('hero-image-preview').style.display = 'block';
+      }
       updatePreview();
     }catch(err){
       document.getElementById('settings-msg').textContent = 'Impossible de charger les réglages.';
