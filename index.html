@@ -1005,10 +1005,62 @@
     document.querySelector('.hero p.lead').setAttribute('contenteditable', 'true');
     buildTicker();
 
+    ['cat1-title','cat2-title','cat3-title','stat1-num','stat1-label','stat2-num','stat2-label',
+     'stat3-num','stat3-label','stat4-num','stat4-label','footer-copyright','footer-address'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el){
+        el.setAttribute('data-editable', id.replace(/-/g, '_'));
+        el.setAttribute('contenteditable', 'true');
+      }
+    });
+
+    [1, 2, 3].forEach(n => {
+      const card = document.querySelector(`.cat${n}`);
+      if(!card) return;
+      card.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.textContent = '✎ Changer la photo';
+      btn.style.cssText = 'position:absolute; bottom:12px; right:12px; z-index:5; font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding:7px 12px; border:none; border-radius:2px; background:#14110F; color:#F3ECDF; cursor:pointer; opacity:.92;';
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.style.display = 'none';
+      card.appendChild(btn);
+      card.appendChild(fileInput);
+      btn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+      fileInput.addEventListener('click', (e) => e.stopPropagation());
+      fileInput.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const file = e.target.files[0];
+        if(!file) return;
+        const original = btn.textContent;
+        btn.textContent = 'Envoi…';
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'upload image');
+        try{
+          const res = await fetch(`https://api.cloudinary.com/v1_1/ywyysh01/image/upload`, { method: 'POST', body: formData });
+          const data = await res.json();
+          if(!res.ok || !data.secure_url) throw new Error('upload');
+          document.getElementById(`cat${n}-bg`).style.backgroundImage = `url('${data.secure_url}')`;
+          currentSettings[`cat${n}_image_url`] = data.secure_url;
+          await fetch(`${API_BASE}/api/site-settings`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${ADMIN_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [`cat${n}_image_url`]: data.secure_url }),
+          });
+          btn.textContent = 'Publié ✓';
+        }catch(err){
+          btn.textContent = 'Échec';
+        }
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    });
+
     const bar = document.createElement('div');
     bar.id = 'edit-toolbar';
     bar.innerHTML = `
-      <span><b>Mode édition</b> — clique sur un texte pour l'écrire directement</span>
+      <span><b>Mode édition</b> — clique sur un texte pour l'écrire, ou sur une photo de catégorie pour la changer</span>
       <div class="swatch-group"><b>Bordeaux</b><input type="color" id="edit-wine"></div>
       <div class="swatch-group"><b>Doré</b><input type="color" id="edit-gold"></div>
       <div class="swatch-group"><b>Crème</b><input type="color" id="edit-cream"></div>
@@ -1040,6 +1092,19 @@
         hero_title: document.querySelector('.hero h1').innerHTML.trim(),
         hero_subtitle: document.querySelector('.hero p.lead').textContent.trim(),
         next_live_text: nextLiveEl ? nextLiveEl.textContent.replace('/', '').trim() : currentSettings.next_live_text,
+        cat1_title: document.getElementById('cat1-title').textContent.trim(),
+        cat2_title: document.getElementById('cat2-title').textContent.trim(),
+        cat3_title: document.getElementById('cat3-title').textContent.trim(),
+        stat1_num: document.getElementById('stat1-num').textContent.trim(),
+        stat1_label: document.getElementById('stat1-label').textContent.trim(),
+        stat2_num: document.getElementById('stat2-num').textContent.trim(),
+        stat2_label: document.getElementById('stat2-label').textContent.trim(),
+        stat3_num: document.getElementById('stat3-num').textContent.trim(),
+        stat3_label: document.getElementById('stat3-label').textContent.trim(),
+        stat4_num: document.getElementById('stat4-num').textContent.trim(),
+        stat4_label: document.getElementById('stat4-label').textContent.trim(),
+        footer_copyright: document.getElementById('footer-copyright').textContent.trim(),
+        footer_address: document.getElementById('footer-address').textContent.trim(),
       };
       try{
         const res = await fetch(`${API_BASE}/api/site-settings`, {
