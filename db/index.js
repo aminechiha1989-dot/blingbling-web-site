@@ -58,7 +58,13 @@ async function initDb() {
   await client.execute(`
     INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
   `);
-
+// Ajoute la colonne hero_image_url si elle n'existe pas encore
+  // (ALTER TABLE échoue silencieusement si la colonne est déjà là — normal).
+  try {
+    await client.execute(`ALTER TABLE site_settings ADD COLUMN hero_image_url TEXT`);
+  } catch (err) {
+    // colonne déjà existante, rien à faire
+  }
   await client.execute(`
     CREATE TABLE IF NOT EXISTS site_settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
