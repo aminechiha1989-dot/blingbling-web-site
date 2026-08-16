@@ -860,10 +860,15 @@
   checkLiveStatus();
   setInterval(checkLiveStatus, 30000); // revérifie toutes les 30 secondes
 
+  const ADMIN_KEY = localStorage.getItem('bb_admin_key') || '';
+  const EDIT_MODE = new URLSearchParams(location.search).has('edit') && !!ADMIN_KEY;
+  let currentSettings = {};
+
   async function loadSiteSettings(){
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`);
       const s = await res.json();
+      currentSettings = s;
       const root = document.documentElement.style;
       if(s.color_wine) root.setProperty('--wine', s.color_wine);
       if(s.color_gold) root.setProperty('--gold', s.color_gold);
@@ -881,7 +886,92 @@
     }catch(err){
       // silencieux : si l'API est indisponible, on garde les valeurs par défaut du CSS
     }
+    if(EDIT_MODE) initEditMode();
   }
+
+  function initEditMode(){
+    document.body.classList.add('edit-mode-active');
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .edit-mode-active [data-editable]{ outline:2px dashed transparent; outline-offset:4px; cursor:text; transition:outline-color .15s; border-radius:2px; }
+      .edit-mode-active [data-editable]:hover{ outline-color:var(--live); }
+      .edit-mode-active [data-editable]:focus{ outline-color:var(--wine); outline-style:solid; background:rgba(255,255,255,.5); }
+      #edit-toolbar{ position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#14110F; color:#F3ECDF; padding:12px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:12px; box-shadow:0 -4px 20px rgba(0,0,0,.25); }
+      #edit-toolbar b{ text-transform:uppercase; letter-spacing:.06em; font-size:10.5px; opacity:.7; margin-right:4px; }
+      #edit-toolbar .swatch-group{ display:flex; align-items:center; gap:6px; }
+      #edit-toolbar input[type=color]{ width:26px; height:26px; border:none; border-radius:3px; padding:0; cursor:pointer; background:none; }
+      #edit-toolbar button{ font-family:inherit; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:8px 16px; border-radius:2px; border:none; cursor:pointer; }
+      #edit-publish{ background:var(--live); color:#14110F; font-weight:600; margin-left:auto; }
+      #edit-msg{ font-size:11px; opacity:.85; }
+    `;
+    document.head.appendChild(style);
+
+    document.querySelector('.hero h1').setAttribute('data-editable', 'hero_title');
+    document.querySelector('.hero h1').setAttribute('contenteditable', 'true');
+    document.querySelector('.hero p.lead').setAttribute('data-editable', 'hero_subtitle');
+    document.querySelector('.hero p.lead').setAttribute('contenteditable', 'true');
+    document.querySelectorAll('.ticker-item').forEach(el => {
+      if(el.textContent.trim().startsWith('Prochain live')){
+        el.setAttribute('data-editable', 'next_live_text');
+        el.setAttribute('contenteditable', 'true');
+      }
+    });
+
+    const bar = document.createElement('div');
+    bar.id = 'edit-toolbar';
+    bar.innerHTML = `
+      <span><b>Mode édition</b> — clique sur un texte pour l'écrire directement</span>
+      <div class="swatch-group"><b>Bordeaux</b><input type="color" id="edit-wine"></div>
+      <div class="swatch-group"><b>Doré</b><input type="color" id="edit-gold"></div>
+      <div class="swatch-group"><b>Crème</b><input type="color" id="edit-cream"></div>
+      <div class="swatch-group"><b>Live</b><input type="color" id="edit-live"></div>
+      <span id="edit-msg"></span>
+      <button id="edit-publish">Publier sur le site</button>
+    `;
+    document.body.appendChild(bar);
+
+    document.getElementById('edit-wine').value = currentSettings.color_wine || '#6B1E3C';
+    document.getElementById('edit-gold').value = currentSettings.color_gold || '#B9925A';
+    document.getElementById('edit-cream').value = currentSettings.color_cream || '#F3ECDF';
+    document.getElementById('edit-live').value = currentSettings.color_live || '#FF3B6E';
+
+    document.getElementById('edit-wine').addEventListener('input', e => document.documentElement.style.setProperty('--wine', e.target.value));
+    document.getElementById('edit-gold').addEventListener('input', e => document.documentElement.style.setProperty('--gold', e.target.value));
+    document.getElementById('edit-cream').addEventListener('input', e => document.documentElement.style.setProperty('--cream', e.target.value));
+    document.getElementById('edit-live').addEventListener('input', e => document.documentElement.style.setProperty('--live', e.target.value));
+
+    document.getElementById('edit-publish').addEventListener('click', async () => {
+      const msg = document.getElementById('edit-msg');
+      msg.textContent = 'Publication…';
+      const nextLiveEl = document.querySelector('.ticker-item[data-editable="next_live_text"]');
+      const payload = {
+        color_wine: document.getElementById('edit-wine').value,
+        color_gold: document.getElementById('edit-gold').value,
+        color_cream: document.getElementById('edit-cream').value,
+        color_live: document.getElementById('edit-live').value,
+        hero_title: document.querySelector('.hero h1').innerHTML.trim(),
+        hero_subtitle: document.querySelector('.hero p.lead').textContent.trim(),
+        next_live_text: nextLiveEl ? nextLiveEl.textContent.replace('/', '').trim() : currentSettings.next_live_text,
+      };
+      try{
+        const res = await fetch(`${API_BASE}/api/site-settings`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${ADMIN_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if(!res.ok){
+          const data = await res.json().catch(() => ({}));
+          msg.textContent = data.error || 'Erreur — non publié.';
+          return;
+        }
+        msg.textContent = 'Publié ✓';
+      }catch(err){
+        msg.textContent = 'Serveur injoignable.';
+      }
+    });
+  }
+
   loadSiteSettings();
 
   loadProducts();
