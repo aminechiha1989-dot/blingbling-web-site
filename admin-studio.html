@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Studio photo — Blingbling</title>
+<style>
+  :root{--wine:#6B1E3C;--ink:#14110F;--paper:#FAF8F5;--line:rgba(20,17,15,.14)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);padding:16px;max-width:640px;margin:0 auto;line-height:1.45}
+  h1{font-size:22px;margin-bottom:4px} .sub{color:rgba(20,17,15,.6);font-size:14px;margin-bottom:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin-bottom:10px;display:flex;gap:8px;align-items:center}
+  .n{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .card.off{opacity:.45;pointer-events:none}
+  button,.btn{font:inherit;border:0;border-radius:99px;padding:12px 18px;background:var(--wine);color:#fff;font-weight:600;cursor:pointer;display:inline-block}
+  button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+  button:disabled{opacity:.5}
+  input,select,textarea{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:#fff}
+  label{font-size:13px;font-weight:600;display:block;margin-bottom:4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .preview{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .preview figure{background:repeating-conic-gradient(#f1f1f1 0 25%,#fff 0 50%) 0 0/18px 18px;border:1px solid var(--line);border-radius:10px;aspect-ratio:3/4;overflow:hidden;position:relative}
+  .preview img{width:100%;height:100%;object-fit:contain}
+  .preview figcaption{position:absolute;left:6px;top:6px;font-size:10px;background:rgba(255,255,255,.9);padding:2px 6px;border-radius:4px}
+  .models{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .models img{width:74px;height:98px;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer}
+  .models img.on{border-color:var(--wine)}
+  .status{font-size:13px;margin-top:8px;min-height:18px}.status.err{color:#b3261e}.status.ok{color:#1b6e3a;font-weight:600}
+  .hint{font-size:12.5px;color:rgba(20,17,15,.6);margin:6px 0 10px}
+  details{margin-top:8px;font-size:13px} summary{cursor:pointer;font-weight:600}
+  a{color:var(--wine)}
+  #app{display:none}
+</style>
+</head>
+<body>
+<h1>Studio photo</h1>
+<p class="sub">Une photo normale → vêtement détouré + photo portée par un mannequin → en ligne sur le portant.</p>
+
+<div class="card" id="login">
+  <h2>Connexion</h2>
+  <input type="password" id="key" placeholder="Clé admin" autocomplete="current-password">
+  <button id="login-btn">Entrer</button>
+  <div class="status" id="login-st"></div>
+</div>
+
+<div id="app">
+  <div class="card" id="c1">
+    <h2><span class="n">1</span>La photo du vêtement</h2>
+    <input type="file" id="photo" accept="image/*">
+    <p class="hint">Vêtement bien à plat ou sur cintre/buste, de face, fond simple. Le détourage se fait sur ton appareil (gratuit). La première fois, il télécharge un modèle (~40 Mo).</p>
+    <div class="status" id="st1"></div>
+    <div class="preview" id="pv1" style="display:none">
+      <figure><img id="img-src" alt="Photo d'origine"><figcaption>Origine</figcaption></figure>
+      <figure><img id="img-cut" alt="Vêtement détouré"><figcaption>Détouré</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card off" id="c2">
+    <h2><span class="n">2</span>La photo portée (mannequin IA)</h2>
+    <label>Choisis un mannequin</label>
+    <div class="models" id="models"></div>
+    <input type="file" id="model-file" accept="image/*" hidden>
+    <button class="ghost" id="add-model">+ Ajouter une photo de mannequin</button>
+    <p class="hint">Une personne debout, de face, en entier ou jusqu'aux genoux. Utilise uniquement une photo que tu as le droit d'utiliser (toi, quelqu'un qui est d'accord, ou une photo libre de droits). Elle est gardée pour les prochaines fois.</p>
+    <label for="gtype">Type de vêtement</label>
+    <select id="gtype"><option value="upper_body">Haut (veste, chemise, pull…)</option><option value="lower_body">Bas (pantalon, jupe)</option><option value="dresses">Robe / ensemble</option></select>
+    <label for="gdesc">Décris le vêtement en quelques mots (en anglais, c'est mieux)</label>
+    <input id="gdesc" placeholder="ex : long sage green blazer with shawl collar">
+    <button id="gen">Créer la photo portée</button>
+    <button class="ghost" id="skip">Passer cette étape</button>
+    <div class="status" id="st2"></div>
+    <div class="preview" id="pv2" style="display:none">
+      <figure style="grid-column:1/-1;aspect-ratio:3/4;background:#fff"><img id="img-try" alt="Photo portée générée"><figcaption>Photo portée (IA)</figcaption></figure>
+    </div>
+    <details>
+      <summary>Quota gratuit dépassé ? Ajoute ton jeton Hugging Face (gratuit)</summary>
+      <p class="hint">Le mannequin IA tourne sur un service gratuit de Hugging Face, limité à quelques photos par jour. Avec un compte gratuit tu en as plus : crée un jeton « Read » sur <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">huggingface.co/settings/tokens</a> et colle-le ici. Il reste uniquement sur cet appareil.</p>
+      <input type="password" id="hf" placeholder="hf_…" autocomplete="off">
+    </details>
+  </div>
+
+  <div class="card off" id="c3">
+    <h2><span class="n">3</span>Mettre en ligne</h2>
+    <label for="p-name">Nom</label><input id="p-name" placeholder="ex : Blazer long vert sauge">
+    <div class="row">
+      <div><label for="p-price">Prix (DT)</label><input id="p-price" type="number" min="0" step="0.1" inputmode="decimal"></div>
+      <div><label for="p-stock">Stock</label><input id="p-stock" type="number" min="1" step="1" value="1" inputmode="numeric"></div>
+    </div>
+    <label for="p-cat">Catégorie</label><input id="p-cat" value="Vêtements">
+    <label for="p-desc">Description (taille, matière…)</label><textarea id="p-desc" rows="2"></textarea>
+    <button id="publish">Publier sur le portant</button>
+    <div class="status" id="st3"></div>
+  </div>
+  <p class="hint"><a href="portant.html">Voir le portant</a> · <a href="admin-produits.html">Produits</a> · <a href="admin-commandes.html">Commandes</a></p>
+</div>
+
+<script type="module">
+  const LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+  const API_BASE = (LOCAL && new URLSearchParams(location.search).get('api')) || 'https://blingbling-b7cg.onrender.com';
+  const CLOUD = 'ywyysh01', PRESET = 'upload image';
+  const TRYON_SPACE = 'yisol/IDM-VTON';
+  const $ = id => document.getElementById(id);
+  const st = (id, t, cls='') => { $(id).textContent = t; $(id).className = 'status ' + cls; };
+  let adminKey = localStorage.getItem('bb_admin_key') || '';
+  let cutBlob = null, garmentBlob = null, tryBlob = null, models = [], modelUrl = '';
+  const auth = () => ({ 'Authorization': 'Bearer ' + adminKey, 'Content-Type': 'application/json' });
+
+  // --- Connexion (même clé que les autres pages admin) ---
+  async function tryLogin(){
+    if(!adminKey) return;
+    st('login-st', 'Vérification… (le serveur peut mettre 30 s à se réveiller)');
+    try{
+      const r = await fetch(API_BASE + '/api/products/0', { method:'DELETE', headers: auth() });
+      if(r.status === 401) throw new Error('Clé incorrecte');
+      localStorage.setItem('bb_admin_key', adminKey);
+      $('login').style.display = 'none'; $('app').style.display = 'block';
+      loadModels();
+    }catch(e){ st('login-st', e.message === 'Clé incorrecte' ? e.message : 'Serveur injoignable, réessaie.', 'err'); }
+  }
+  $('login-btn').onclick = () => { adminKey = $('key').value.trim(); tryLogin(); };
+  $('hf').value = localStorage.getItem('bb_hf_token') || '';
+  $('hf').onchange = () => localStorage.setItem('bb_hf_token', $('hf').value.trim());
+  tryLogin();
+
+  async function cloudinary(blob, name){
+    const fd = new FormData(); fd.append('file', blob, name); fd.append('upload_preset', PRESET);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method:'POST', body: fd });
+    const d = await r.json();
+    if(!r.ok || !d.secure_url) throw new Error(d.error?.message || "Échec de l'envoi de la photo");
+    return d.secure_url;
+  }
+  const loadImg = src => new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ko(new Error('Image illisible')); i.src = src; });
+  const toBlob = (c, type, q) => new Promise(ok => c.toBlob(ok, type, q));
+
+  // Réduit la photo (les photos de téléphone sont trop lourdes pour le détourage).
+  async function shrink(file, max = 1400){
+    const url = URL.createObjectURL(file), img = await loadImg(url); URL.revokeObjectURL(url);
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return toBlob(c, 'image/jpeg', .92);
+  }
+  // Recadre au plus près du vêtement ; renvoie le PNG transparent + une version sur fond blanc pour l'IA.
+  async function trim(pngBlob){
+    const url = URL.createObjectURL(pngBlob), img = await loadImg(url); URL.revokeObjectURL(url);
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+    for(let y = 0; y < c.height; y++) for(let xx = 0; xx < c.width; xx++) if(d[(y*c.width+xx)*4+3] > 24){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(y<y0)y0=y; if(y>y1)y1=y; }
+    if(x1 <= x0 || y1 <= y0) throw new Error("Aucun vêtement détecté sur la photo");
+    const pad = Math.round(Math.max(x1-x0, y1-y0) * .04), w = x1-x0+pad*2, h = y1-y0+pad*2;
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    out.getContext('2d').drawImage(c, x0, y0, x1-x0, y1-y0, pad, pad, x1-x0, y1-y0);
+    const white = document.createElement('canvas'); white.width = w; white.height = h;
+    const wx = white.getContext('2d'); wx.fillStyle = '#fff'; wx.fillRect(0,0,w,h); wx.drawImage(out, 0, 0);
+    return { png: await toBlob(out, 'image/png'), jpg: await toBlob(white, 'image/jpeg', .93) };
+  }
+
+  // --- Étape 1 : détourage dans le navigateur ---
+  $('photo').onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    cutBlob = garmentBlob = tryBlob = null; $('c2').classList.add('off'); $('c3').classList.add('off'); $('pv2').style.display = 'none';
+    try{
+      st('st1', 'Préparation de la photo…');
+      const small = await shrink(f);
+      $('img-src').src = URL.createObjectURL(small); $('img-cut').removeAttribute('src'); $('pv1').style.display = 'grid';
+      st('st1', 'Chargement de l\'outil de détourage…');
+      const { removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+      const raw = await removeBackground(small, { progress: (k, c, t) => st('st1', k.startsWith('fetch') ? `Téléchargement du modèle… ${t ? Math.round(c/t*100) : 0} %` : 'Détourage en cours…') });
+      const t = await trim(raw); cutBlob = t.png; garmentBlob = t.jpg;
+      $('img-cut').src = URL.createObjectURL(cutBlob);
+      st('st1', 'Vêtement détouré ✓', 'ok');
+      $('c2').classList.remove('off'); $('c3').classList.remove('off');
+    }catch(err){ st('st1', 'Détourage impossible : ' + err.message, 'err'); }
+  };
+
+  // --- Étape 2 : mannequins enregistrés + essayage IA ---
+  async function loadModels(){
+    try{ const s = await (await fetch(API_BASE + '/api/site-settings')).json(); models = JSON.parse(s.studio_models || '[]'); }catch(e){ models = []; }
+    if(!Array.isArray(models)) models = [];
+    modelUrl = localStorage.getItem('bb_model') || models[0] || ''; if(!models.includes(modelUrl)) modelUrl = models[0] || '';
+    drawModels();
+  }
+  function drawModels(){
+    $('models').innerHTML = '';
+    models.forEach(u => { const i = document.createElement('img'); i.src = u; i.alt = 'Mannequin'; i.className = u === modelUrl ? 'on' : ''; i.onclick = () => { modelUrl = u; localStorage.setItem('bb_model', u); drawModels(); }; $('models').append(i); });
+    if(!models.length) $('models').innerHTML = '<span class="hint">Aucun mannequin enregistré pour l\'instant.</span>';
+  }
+  $('add-model').onclick = () => $('model-file').click();
+  $('model-file').onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      st('st2', 'Envoi de la photo du mannequin…');
+      const url = await cloudinary(await shrink(f, 1280), 'mannequin.jpg');
+      models = [url, ...models].slice(0, 8); modelUrl = url; localStorage.setItem('bb_model', url);
+      const r = await fetch(API_BASE + '/api/site-settings', { method:'PATCH', headers: auth(), body: JSON.stringify({ studio_models: JSON.stringify(models) }) });
+      if(!r.ok) throw new Error('Enregistrement refusé par le serveur');
+      drawModels(); st('st2', 'Mannequin enregistré ✓', 'ok');
+    }catch(err){ st('st2', err.message, 'err'); }
+    e.target.value = '';
+  };
+
+  $('gen').onclick = async () => {
+    if(!garmentBlob) return;
+    if(!modelUrl){ st('st2', 'Ajoute d\'abord une photo de mannequin.', 'err'); return; }
+    $('gen').disabled = true; st('st2', 'Connexion au mannequin IA…');
+    try{
+      const { Client } = await import('https://cdn.jsdelivr.net/npm/@gradio/client@2.8.0/dist/index.min.js');
+      const token = $('hf').value.trim();
+      const app = await Client.connect(TRYON_SPACE, token ? { token, hf_token: token } : {});
+      const person = await (await fetch(modelUrl)).blob();
+      st('st2', 'Création de la photo portée… (30 s à 2 min)');
+      const crop = true; // recadre le mannequin au bon format
+      const res = await app.predict('/tryon', [
+        { background: person, layers: [], composite: null },
+        garmentBlob, $('gdesc').value.trim() || 'a garment', true, crop, 30, Math.floor(Math.random()*1e6),
+      ]);
+      const out = res.data[0]; const outUrl = out?.url || out;
+      tryBlob = await (await fetch(outUrl)).blob();
+      $('img-try').src = URL.createObjectURL(tryBlob); $('pv2').style.display = 'grid';
+      st('st2', 'Photo portée prête ✓ — vérifie que la couleur et la coupe sont fidèles avant de publier.', 'ok');
+    }catch(err){
+      const m = String(err?.message || err);
+      st('st2', /quota|limit|GPU/i.test(m) ? 'Le quota gratuit du jour est atteint. Ajoute ton jeton Hugging Face ci-dessous, ou réessaie plus tard, ou publie sans photo portée.' : 'Échec du mannequin IA : ' + m, 'err');
+    }
+    $('gen').disabled = false;
+  };
+  $('skip').onclick = () => { tryBlob = null; $('pv2').style.display = 'none'; st('st2', 'OK, sans photo portée.'); $('p-name').focus(); };
+
+  // --- Étape 3 : publier ---
+  $('publish').onclick = async () => {
+    const name = $('p-name').value.trim(), price = parseFloat($('p-price').value), stock = parseInt($('p-stock').value, 10);
+    if(!cutBlob){ st('st3', 'Commence par la photo du vêtement.', 'err'); return; }
+    if(!name || !(price > 0) || !(stock > 0)){ st('st3', 'Nom, prix et stock sont obligatoires.', 'err'); return; }
+    $('publish').disabled = true;
+    try{
+      st('st3', 'Envoi des photos…');
+      const images = [await cloudinary(cutBlob, 'piece.png')];
+      if(tryBlob) images.push(await cloudinary(tryBlob, 'portee.jpg'));
+      st('st3', 'Création du produit…');
+      const r = await fetch(API_BASE + '/api/products', { method:'POST', headers: auth(), body: JSON.stringify({
+        name, description: $('p-desc').value.trim(), price_millimes: Math.round(price*1000), category: $('p-cat').value.trim(), image_url: images[0], images, stock }) });
+      const d = await r.json(); if(!r.ok) throw new Error(d.error || 'Erreur serveur');
+      st('st3', `« ${d.name} » est en ligne sur le portant ✓`, 'ok');
+      ['p-name','p-price','p-desc'].forEach(i => $(i).value = ''); $('photo').value = '';
+    }catch(err){ st('st3', err.message, 'err'); }
+    $('publish').disabled = false;
+  };
+</script>
+</body>
+</html>

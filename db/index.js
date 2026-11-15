@@ -58,13 +58,6 @@ async function initDb() {
   await client.execute(`
     INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
   `);
-// Ajoute la colonne hero_image_url si elle n'existe pas encore
-  // (ALTER TABLE échoue silencieusement si la colonne est déjà là — normal).
-  try {
-    await client.execute(`ALTER TABLE site_settings ADD COLUMN hero_image_url TEXT`);
-  } catch (err) {
-    // colonne déjà existante, rien à faire
-  }
   await client.execute(`
     CREATE TABLE IF NOT EXISTS site_settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -77,25 +70,36 @@ async function initDb() {
       hero_subtitle TEXT NOT NULL DEFAULT 'Chaque piece a d''abord ete montree en live avant d''arriver ici.',
       next_live_text TEXT NOT NULL DEFAULT 'Prochain live : ce soir 20h',
       hero_image_url TEXT,
-      const newColumns = [
-    'cat1_title TEXT', 'cat1_image_url TEXT', 'cat2_title TEXT', 'cat2_image_url TEXT', 'cat3_title TEXT', 'cat3_image_url TEXT',
-    'stat1_num TEXT', 'stat1_label TEXT', 'stat2_num TEXT', 'stat2_label TEXT',
-    'stat3_num TEXT', 'stat3_label TEXT', 'stat4_num TEXT', 'stat4_label TEXT',
-    'footer_copyright TEXT', 'footer_address TEXT'
-  ];
-  for (const col of newColumns) {
-    try {
-      await client.execute(`ALTER TABLE site_settings ADD COLUMN ${col}`);
-    } catch (err) {
-      // colonne déjà existante, rien à faire
-    }
-  }
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
   await client.execute(`
     INSERT OR IGNORE INTO site_settings (id) VALUES (1)
   `);
+
+  // Colonnes ajoutées après coup : ALTER TABLE échoue si la colonne existe déjà — normal, on ignore.
+  const newColumns = [
+    ['site_settings', 'hero_image_url TEXT'],
+    ['site_settings', 'cat1_title TEXT'], ['site_settings', 'cat1_image_url TEXT'],
+    ['site_settings', 'cat2_title TEXT'], ['site_settings', 'cat2_image_url TEXT'],
+    ['site_settings', 'cat3_title TEXT'], ['site_settings', 'cat3_image_url TEXT'],
+    ['site_settings', 'stat1_num TEXT'], ['site_settings', 'stat1_label TEXT'],
+    ['site_settings', 'stat2_num TEXT'], ['site_settings', 'stat2_label TEXT'],
+    ['site_settings', 'stat3_num TEXT'], ['site_settings', 'stat3_label TEXT'],
+    ['site_settings', 'stat4_num TEXT'], ['site_settings', 'stat4_label TEXT'],
+    ['site_settings', 'footer_copyright TEXT'], ['site_settings', 'footer_address TEXT'],
+    // Studio photo : liste de photos (JSON) — [photo détourée, photo mannequin, ...]
+    ['products', 'images TEXT'],
+    // Studio photo : photos de mannequins réutilisables (JSON)
+    ['site_settings', 'studio_models TEXT'],
+  ];
+  for (const [table, col] of newColumns) {
+    try {
+      await client.execute(`ALTER TABLE ${table} ADD COLUMN ${col}`);
+    } catch (err) {
+      // colonne déjà existante, rien à faire
+    }
+  }
 }
 
 module.exports = { client, initDb };
