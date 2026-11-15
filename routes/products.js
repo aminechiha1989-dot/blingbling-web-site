@@ -4,6 +4,18 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// images : liste d'URL (tableau ou texte JSON) -> stockée en texte JSON, ou null.
+function normalizeImages(value) {
+  if (value === undefined || value === null || value === '') return null;
+  let list = value;
+  if (typeof value === 'string') {
+    try { list = JSON.parse(value); } catch { return null; }
+  }
+  if (!Array.isArray(list)) return null;
+  const clean = list.filter((u) => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 8);
+  return clean.length ? JSON.stringify(clean) : null;
+}
+
 // GET /api/products — catalogue public, avec filtres optionnels
 router.get('/', async (req, res) => {
   const { category, live, search } = req.query;
@@ -39,15 +51,16 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
   const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0 } = req.body;
+  const images = normalizeImages(req.body.images);
 
   if (!name || !price_millimes) {
     return res.status(400).json({ error: 'name et price_millimes sont requis' });
   }
 
   const result = await client.execute({
-    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0],
+    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, images)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, images],
   });
 
   const created = await client.execute({
@@ -64,14 +77,16 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   });
   if (existing.rows.length === 0) return res.status(404).json({ error: 'Produit introuvable' });
 
-  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live'];
+  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'images'];
   const sets = [];
   const args = [];
 
   for (const field of fields) {
     if (req.body[field] !== undefined) {
       sets.push(`${field} = ?`);
-      args.push(field === 'is_live' ? (req.body[field] ? 1 : 0) : req.body[field]);
+      if (field === 'is_live') args.push(req.body[field] ? 1 : 0);
+      else if (field === 'images') args.push(normalizeImages(req.body[field]));
+      else args.push(req.body[field]);
     }
   }
   if (sets.length === 0) return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
