@@ -576,10 +576,7 @@
 
   /* ---------- sticker vendu ---------- */
   .sold-sticker{position:absolute; top:50%; left:50%; z-index:4; transform:translate(-50%,-50%) rotate(-12deg); background:#1A1A2E; color:#fff; font-family:var(--font-display); font-style:italic; font-weight:700; font-size:28px; padding:8px 26px; border-radius:12px; border:3px solid #fff; box-shadow:0 10px 30px -10px rgba(26,26,46,.6); letter-spacing:.02em; pointer-events:none;}
-  .product.sold .product-img img{filter:grayscale(.7) brightness(.92);}
   .product.sold .unique-badge{display:none;}
-  .product.sold h3, .product.sold .price{opacity:.55;}
-  .product.sold .price{text-decoration:line-through;}
   .product.sold .add-btn{opacity:.5; cursor:not-allowed;}
 </style>
 </head>
@@ -923,7 +920,6 @@
   const soldLast = (arr) => [...arr].sort((a, b) => (a.stock <= 0) - (b.stock <= 0));
   function group(title, items, max, filter, sub){
     if(!items.length) return '';
-    items = soldLast(items);
     const more = max && items.length > max ? `<button type="button" class="see-all" data-filter="${filter}" data-sub="${sub||''}">Voir tout (${items.length}) →</button>` : '';
     return `<div class="group"><div class="group-head"><h3>${title}</h3>${more}</div><div class="products">${(max ? items.slice(0, max) : items).map(cardHtml).join('')}</div></div>`;
   }
@@ -936,14 +932,14 @@
       const list = products.filter(p => (p.name + ' ' + (p.description||'') + ' ' + (p.category||'')).toLowerCase().includes(term));
       titleEl.innerHTML = `Résultats pour « ${searchTerm} » <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''}.`;
-      html = list.length ? `<div class="products">${soldLast(list).map(cardHtml).join('')}</div>` : '<p class="empty">Aucun résultat.</p>';
+      html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucun résultat.</p>';
     } else if(activeCategory){
       const inCat = products.filter(p => parseCat(p.category).main === activeCategory);
       titleEl.innerHTML = `${activeSub ? activeCategory + ' · ' + activeSub : activeCategory} <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       if(activeSub){
         const list = inCat.filter(p => parseCat(p.category).sub === activeSub);
         subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''} disponible${list.length !== 1 ? 's' : ''}.`;
-        html = list.length ? `<div class="products">${soldLast(list).map(cardHtml).join('')}</div>` : '<p class="empty">Aucune pièce ici pour l’instant. Reviens après le prochain live !</p>';
+        html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucune pièce ici pour l’instant. Reviens après le prochain live !</p>';
       } else {
         subEl.textContent = `${inCat.length} pièce${inCat.length !== 1 ? 's' : ''} disponible${inCat.length !== 1 ? 's' : ''}.`;
         (CAT_TREE[activeCategory] || []).forEach(sub => { html += group(sub, inCat.filter(p => parseCat(p.category).sub === sub), 4, activeCategory, sub); });
@@ -953,7 +949,7 @@
     } else {
       titleEl.textContent = 'Toutes nos pièces';
       subEl.textContent = "Pièces uniques, prix fixes. Quand c'est parti, c'est parti.";
-      const newest = products.filter(p => p.stock > 0).sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
+      const newest = [...products].sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
       html += group('Nouveautés', newest, 0);
       CAT_ORDER.forEach(cat => { html += group(cat, products.filter(p => parseCat(p.category).main === cat), 4, cat, ''); });
       html += group('Autres pièces', products.filter(p => !CAT_ORDER.includes(parseCat(p.category).main)), 0);
