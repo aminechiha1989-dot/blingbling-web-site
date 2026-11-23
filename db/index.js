@@ -77,7 +77,13 @@ async function initDb() {
       hero_subtitle TEXT NOT NULL DEFAULT 'Chaque piece a d''abord ete montree en live avant d''arriver ici.',
       next_live_text TEXT NOT NULL DEFAULT 'Prochain live : ce soir 20h',
       hero_image_url TEXT,
-      const newColumns = [
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await client.execute(`
+    INSERT OR IGNORE INTO site_settings (id) VALUES (1)
+  `);
+  const newColumns = [
     'cat1_title TEXT', 'cat1_image_url TEXT', 'cat2_title TEXT', 'cat2_image_url TEXT', 'cat3_title TEXT', 'cat3_image_url TEXT',
     'stat1_num TEXT', 'stat1_label TEXT', 'stat2_num TEXT', 'stat2_label TEXT',
     'stat3_num TEXT', 'stat3_label TEXT', 'stat4_num TEXT', 'stat4_label TEXT',
@@ -90,12 +96,6 @@ async function initDb() {
       // colonne déjà existante, rien à faire
     }
   }
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
-  await client.execute(`
-    INSERT OR IGNORE INTO site_settings (id) VALUES (1)
-  `);
 }
 
 module.exports = { client, initDb };
