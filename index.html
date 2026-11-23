@@ -21,17 +21,19 @@
 }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="icon-512.png">
 <style>
   :root{
-    --ink:#14110F;
-    --cream:#F3ECDF;
-    --cream-2:#EAE1CE;
-    --wine:#6B1E3C;
+    --ink:#2B2B2B;
+    --cream:#FBF9F6;
+    --cream-2:#EFE7DC;
+    --wine:#5A4A36;
     --live:#FF3B6E;
-    --gold:#B9925A;
+    --gold:#B08D57;
     --line: rgba(20,17,15,0.12);
-    --font-display:'Fraunces', serif;
+    --font-display:'Playfair Display', serif;
     --font-body:'Inter', sans-serif;
     --font-mono:'JetBrains Mono', monospace;
   }
@@ -433,13 +435,28 @@
   .order-success p{font-size:13.5px; opacity:.7; margin-bottom:20px;}
   .form-error{color:var(--live); font-size:12.5px; display:none;}
   .form-error.open{display:block;}
+
+  /* ---------- thème Noir & Sable + logo (2026-11) ---------- */
+  .logo{font-family:'Playfair Display', serif !important; font-style:italic; font-weight:700 !important; font-size:30px !important; letter-spacing:-.01em !important; line-height:1; color:var(--ink);}
+  .logo .li{position:relative; display:inline-block;}
+  .logo .li svg{position:absolute; left:62%; top:-.02em; width:.26em; height:.26em; transform:translateX(-50%); fill:var(--gold); display:block;}
+  .btn{border-radius:999px; font-family:var(--font-body); font-weight:600; text-transform:none; letter-spacing:0; font-size:14px;}
+  .btn:hover{background:#000; border-color:#000;}
+  .product-img, .cat-card, .qv-img-wrap, .hero-visual, .review, .quickview-card{border-radius:18px; overflow:hidden;}
+  .product-img{background:#FFFFFF !important; border:1px solid #ECE7E0;}
+  .cat1 .cat-bg{background:linear-gradient(155deg,#F3ECE2,#D8C7AE);}
+  .cat2 .cat-bg{background:linear-gradient(155deg,#EFE7DC,#B08D57);}
+  .cat3 .cat-bg{background:linear-gradient(155deg,#E9E4DD,#2B2B2B);}
+  .eyebrow{font-family:var(--font-body); font-weight:700;}
+  .hero h1 i, .live-band h2 i{font-weight:600;}
+  .checkout-form input, .checkout-form select, .checkout-form textarea{border-radius:12px;}
 </style>
 </head>
 <body>
 
 <header>
   <nav class="wrap">
-    <div class="logo">BLINGBLING <em>ACCESSOIRES</em></div>
+    <a class="logo" href="./" aria-label="Blingbling, accueil">bl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ngbl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ng</a>
     <div class="navlinks">
       <a href="#nouveautes">Nouveautés</a>
       <a href="#live">Vu en live</a>
@@ -560,7 +577,7 @@
   <div class="wrap">
     <div class="foot-grid">
       <div>
-        <div class="logo">BLINGBLING <em>ACCESSOIRES</em></div>
+        <a class="logo" href="./" aria-label="Blingbling, accueil">bl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ngbl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ng</a>
         <p>Mode et accessoires, montrés en direct, livrés chez toi. Une boutique née sur TikTok Live.</p>
       </div>
       <div class="foot-col">

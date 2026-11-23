@@ -6,6 +6,8 @@
 <title>BLINGBLING ACCESSOIRES — Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&display=swap">
+<link rel="icon" href="favicon.ico" sizes="any">
 <style>
   :root{
     --ink:#14110F;
@@ -141,6 +143,10 @@
   .row-actions button.delete:hover{background:var(--live); border-color:var(--live); color:#fff;}
   .row-actions button.edit:hover{background:var(--ink); border-color:var(--ink); color:var(--cream);}
   .empty-state{padding:40px; text-align:center; color:rgba(20,17,15,.55); font-size:14px;}
+
+  .logo{font-family:'Playfair Display', serif !important; font-style:italic; font-weight:700 !important; font-size:26px !important; line-height:1;}
+  .logo .li{position:relative; display:inline-block;}
+  .logo .li svg{position:absolute; left:62%; top:-.02em; width:.26em; height:.26em; transform:translateX(-50%); fill:#B08D57; display:block;}
 </style>
 </head>
 <body>
@@ -157,7 +163,7 @@
   <header>
     <div class="wrap">
       <div>
-        <div class="logo">BLINGBLING <em>ACCESSOIRES</em></div>
+        <div class="logo">bl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ngbl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ng</div>
         <div class="logo-sub">Espace admin</div>
       </div>
       <div style="display:flex; align-items:center; gap:14px;">
@@ -775,9 +781,9 @@
     try{
       const res = await fetch(`${API_BASE}/api/site-settings`);
       const s = await res.json();
-      document.getElementById('s-color-wine').value = s.color_wine || '#6B1E3C';
-      document.getElementById('s-color-gold').value = s.color_gold || '#B9925A';
-      document.getElementById('s-color-cream').value = s.color_cream || '#F3ECDF';
+      document.getElementById('s-color-wine').value = s.color_wine || '#5A4A36';
+      document.getElementById('s-color-gold').value = s.color_gold || '#B08D57';
+      document.getElementById('s-color-cream').value = s.color_cream || '#FBF9F6';
       document.getElementById('s-color-live').value = s.color_live || '#FF3B6E';
       document.getElementById('s-hero-title').value = s.hero_title || '';
       document.getElementById('s-hero-subtitle').value = s.hero_subtitle || '';
