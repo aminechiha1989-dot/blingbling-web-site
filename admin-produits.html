@@ -160,6 +160,10 @@
   .chips{display:flex; flex-wrap:wrap; gap:8px;}
   .chip{font:inherit; font-size:14px; padding:10px 16px; min-height:44px; border-radius:999px; border:1px solid #CFC6B8; background:#fff; cursor:pointer;}
   .chip.on{background:#2B2B2B; color:#fff; border-color:#2B2B2B;}
+  .chip.sub{min-height:38px; padding:7px 14px; font-size:13px;}
+  .chip.sub.on{background:#EFE7DC; color:#2B2B2B; border-color:#B08D57; font-weight:600;}
+  .chip.sub{min-height:38px; padding:7px 14px; font-size:13px;}
+  .chip.sub.on{background:#EFE7DC; color:#2B2B2B; border-color:#B08D57; font-weight:600;}
   .more summary{cursor:pointer; font-size:14px; color:#555;}
   .btn.big{font-size:15px; padding:16px 28px;}
   .quick-fields .field input{font-size:16px;}
@@ -219,13 +223,13 @@
               <input type="number" id="p-price" step="0.001" min="0" required inputmode="decimal" placeholder="Ex. 35">
             </div>
             <div class="field">
-              <label>4. Catégorie</label>
+              <label>4. Catégorie et sous-catégorie</label>
               <div class="chips" id="cat-chips">
                 <button type="button" class="chip" data-cat="Fripe">Fripe</button>
                 <button type="button" class="chip" data-cat="Prêt-à-porter">Prêt-à-porter</button>
-                <button type="button" class="chip" data-cat="Bijoux">Bijoux</button>
-                <button type="button" class="chip" data-cat="Sacs & accessoires">Sacs & accessoires</button>
+                <button type="button" class="chip" data-cat="Accessoires">Accessoires</button>
               </div>
+              <div class="chips" id="sub-chips" style="margin-top:8px;"></div>
             </div>
             <details class="more">
               <summary>Plus d'options (facultatif)</summary>
@@ -588,9 +592,21 @@
 
   let uploading = false;
   let lastCategory = '';
+  const CAT_TREE = {"Fripe": ["Hauts", "Vestes & manteaux", "Robes & jupes", "Pantalons & jeans", "Chaussures"], "Prêt-à-porter": ["Hauts", "Robes", "Pantalons & jupes", "Ensembles", "Vestes"], "Accessoires": ["Bijoux", "Sacs", "Foulards & ceintures", "Autres"]};
+  const LEGACY = { 'Bijoux': ['Accessoires','Bijoux'], 'Sacs & accessoires': ['Accessoires','Sacs'] };
+  let curMain = '', curSub = '';
   function setCategory(cat){
-    document.getElementById('p-category').value = cat || '';
-    document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.toggle('on', c.dataset.cat === cat));
+    cat = (cat || '').trim();
+    let main, sub;
+    if(LEGACY[cat]) [main, sub] = LEGACY[cat];
+    else [main, sub] = cat.split('/').map(x => (x || '').trim());
+    curMain = main || ''; curSub = sub || '';
+    document.getElementById('p-category').value = curMain ? (curSub ? `${curMain} / ${curSub}` : curMain) : '';
+    document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.toggle('on', c.dataset.cat === curMain));
+    const subWrap = document.getElementById('sub-chips');
+    const subs = CAT_TREE[curMain] || [];
+    subWrap.innerHTML = subs.map(x => `<button type="button" class="chip sub ${x === curSub ? 'on' : ''}" data-sub="${x}">${x}</button>`).join('');
+    subWrap.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => setCategory(`${curMain} / ${b.dataset.sub}`)));
   }
   document.querySelectorAll('#cat-chips .chip').forEach(c => c.addEventListener('click', () => setCategory(c.dataset.cat)));
   function showPreview(src){
@@ -653,7 +669,7 @@
 
     if(uploading){ formMsg.textContent = 'Attends la fin de l\'envoi de la photo…'; return; }
     if(!document.getElementById('p-image').value){ formMsg.textContent = 'Ajoute d\'abord une photo.'; formMsg.classList.add('error'); return; }
-    if(!document.getElementById('p-category').value){ formMsg.textContent = 'Choisis une catégorie.'; formMsg.classList.add('error'); return; }
+    if(!curMain || ((CAT_TREE[curMain]||[]).length && !curSub)){ formMsg.textContent = 'Choisis une catégorie et une sous-catégorie.'; formMsg.classList.add('error'); return; }
     lastCategory = document.getElementById('p-category').value;
     const payload = {
       name: document.getElementById('p-name').value.trim(),
