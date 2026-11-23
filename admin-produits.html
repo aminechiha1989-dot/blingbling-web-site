@@ -170,6 +170,36 @@
 
   .row-actions .sold-toggle{background:#6B4EFF; color:#fff; border:0; border-radius:999px; padding:6px 12px; cursor:pointer; font-size:12px;}
   .row-actions .sold-toggle.on{background:#fff; color:#1A1A2E; border:1px solid #C9BFF2;}
+
+  /* ---------- admin sur téléphone ---------- */
+  html, body{overflow-x:hidden;}
+  @media (max-width:720px){
+    header .wrap{flex-wrap:wrap; gap:12px; padding-left:16px !important; padding-right:16px !important;}
+    header .logo{white-space:nowrap; font-size:26px !important;}
+    .head-actions{width:100%; flex-wrap:wrap; gap:8px !important;}
+    .head-actions > *{flex:1 1 auto; text-align:center; justify-content:center; min-height:44px; display:flex; align-items:center;}
+    main.wrap, .wrap{padding-left:16px !important; padding-right:16px !important;}
+    .form-card{padding:16px; border-radius:14px;}
+    .form-grid, .settings-cols{grid-template-columns:1fr !important;}
+    .dropzone{aspect-ratio:4/3;}
+    .chip{flex:none;}
+    .form-actions{display:flex; flex-direction:column; gap:10px;}
+    .form-actions .btn{width:100%; text-align:center;}
+    .products-table, .products-table tbody{display:block; width:100%; border:0; background:transparent;}
+    .products-table thead{display:none;}
+    .products-table tr{display:grid; grid-template-columns:64px 1fr auto; grid-template-areas:"img name price" "img cat stock" "act act act"; gap:4px 12px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; align-items:center;}
+    .products-table td{display:block; padding:0 !important; border:0 !important;}
+    .products-table .c-img{grid-area:img;} .products-table .c-img .prod-thumb{width:64px; height:64px; border-radius:10px; object-fit:cover;}
+    .products-table .c-name{grid-area:name; font-size:15px;}
+    .products-table .c-price{grid-area:price; font-weight:700; text-align:right;}
+    .products-table .c-cat{grid-area:cat; font-size:12px; color:#6B6B6B;}
+    .products-table .c-stock{grid-area:stock; font-size:12px; text-align:right;}
+    .products-table .c-live{display:none;}
+    .products-table td:last-child{grid-area:act;}
+    .products-table .row-actions{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:8px; margin-top:8px;}
+    .products-table .row-actions button{min-height:42px; width:100%;}
+    input, select, textarea{font-size:16px !important;}
+  }
 </style>
 </head>
 <body>
@@ -189,7 +219,7 @@
         <div class="logo">bl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ngbl<span class="li">ı<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z"/></svg></span>ng</div>
         <div class="logo-sub">Espace admin</div>
       </div>
-      <div style="display:flex; align-items:center; gap:14px;">
+      <div class="head-actions" style="display:flex; align-items:center; gap:14px;">
         <button class="live-switch" id="live-switch">
           <span class="live-switch-dot"></span>
           <span id="live-switch-label">Live : chargement…</span>
@@ -281,7 +311,7 @@
     <p style="margin-bottom:16px;">
       <a id="edit-live-link" href="https://aminechiha1989-dot.github.io/blingbling-web-site/?edit=1" target="_blank" class="btn" style="display:inline-block; text-decoration:none;">✎ Modifier directement sur le site en ligne</a>
     </p>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+    <div class="settings-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
       <div class="form-card">
         <div class="form-grid">
           <div class="field">
@@ -520,12 +550,12 @@
     document.getElementById('empty-state').style.display = 'none';
     tbody.innerHTML = products.map(p => `
       <tr>
-        <td>${p.image_url ? `<img class="prod-thumb" src="${p.image_url}" alt="">` : `<div class="prod-thumb"></div>`}</td>
-        <td class="prod-name">${p.name}</td>
-        <td>${formatPrice(p.price_millimes)}</td>
-        <td>${p.stock}</td>
-        <td>${p.category || '—'}</td>
-        <td><button class="live-toggle ${p.is_live ? 'on' : ''}" data-id="${p.id}">${p.is_live ? 'En live' : 'Off'}</button></td>
+        <td class="c-img">${p.image_url ? `<img class="prod-thumb" src="${p.image_url}" alt="">` : `<div class="prod-thumb"></div>`}</td>
+        <td class="prod-name c-name">${p.name}</td>
+        <td class="c-price">${formatPrice(p.price_millimes)}</td>
+        <td class="c-stock">Stock : ${p.stock}</td>
+        <td class="c-cat">${p.category || '—'}</td>
+        <td class="c-live"><button class="live-toggle ${p.is_live ? 'on' : ''}" data-id="${p.id}">${p.is_live ? 'En live' : 'Off'}</button></td>
         <td>
           <div class="row-actions">
             <button class="sold-toggle ${p.stock <= 0 ? 'on' : ''}" data-id="${p.id}">${p.stock <= 0 ? 'Remettre en vente' : 'Marquer vendu'}</button>
