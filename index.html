@@ -1070,9 +1070,6 @@
       const s = await res.json();
       currentSettings = s;
       const root = document.documentElement.style;
-      if(s.color_wine) root.setProperty('--wine', s.color_wine);
-      if(s.color_gold) root.setProperty('--gold', s.color_gold);
-      if(s.color_cream) root.setProperty('--cream', s.color_cream);
       if(s.color_live) root.setProperty('--live', s.color_live);
       if(s.hero_title) document.querySelector('.hero h1').innerHTML = s.hero_title;
       if(s.hero_subtitle) document.querySelector('.hero p.lead').textContent = s.hero_subtitle;
