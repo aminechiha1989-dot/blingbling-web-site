@@ -147,6 +147,22 @@
   .logo{font-family:'Playfair Display', serif !important; font-style:italic; font-weight:700 !important; font-size:26px !important; line-height:1;}
   .logo .li{position:relative; display:inline-block;}
   .logo .li svg{position:absolute; left:62%; top:-.02em; width:.26em; height:.26em; transform:translateX(-50%); fill:#B08D57; display:block;}
+
+  .quick-grid{display:grid; grid-template-columns:280px 1fr; gap:28px; align-items:start;}
+  @media(max-width:720px){.quick-grid{grid-template-columns:1fr;}}
+  .quick-fields{display:flex; flex-direction:column; gap:16px;}
+  .dropzone{aspect-ratio:3/4; border:2px dashed #CFC6B8; border-radius:16px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer; position:relative; overflow:hidden; padding:16px; font-size:14px; color:#555; line-height:1.5;}
+  .dropzone.on{border-color:#B08D57; background:#FBF6EE;}
+  .dropzone img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#fff;}
+  .dropzone.has-img .dz-text{display:none;}
+  #p-image-upload-status{font-size:13px; margin-top:8px; min-height:18px;}
+  #p-image-upload-status.success{color:#1B6B34;} #p-image-upload-status.error{color:#A12A2A;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{font:inherit; font-size:14px; padding:10px 16px; min-height:44px; border-radius:999px; border:1px solid #CFC6B8; background:#fff; cursor:pointer;}
+  .chip.on{background:#2B2B2B; color:#fff; border-color:#2B2B2B;}
+  .more summary{cursor:pointer; font-size:14px; color:#555;}
+  .btn.big{font-size:15px; padding:16px 28px;}
+  .quick-fields .field input{font-size:16px;}
 </style>
 </head>
 <body>
@@ -182,51 +198,57 @@
     <div class="form-card">
       <form id="product-form">
         <input type="hidden" id="p-id">
-        <div class="form-grid">
-          <div class="field full">
-            <label>Nom du produit</label>
-            <input type="text" id="p-name" required>
-          </div>
-          <div class="field full">
-            <label>Description</label>
-            <textarea id="p-description" rows="2"></textarea>
-          </div>
-          <div class="field full">
-            <label>Photo</label>
-            <div class="photo-upload-row">
-              <input type="file" id="p-image-file" accept="image/*" style="display:none;">
-              <button type="button" class="btn ghost" id="p-image-upload-btn">Choisir une photo sur mon PC</button>
-              <span id="p-image-upload-status"></span>
+        <input type="hidden" id="p-image">
+        <input type="hidden" id="p-category">
+        <div class="quick-grid">
+          <div>
+            <input type="file" id="p-image-file" accept="image/*" style="display:none;">
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Ajouter la photo du produit">
+              <img id="p-image-preview" src="" alt="" style="display:none;">
+              <div class="dz-text" id="dz-text"><b>1. Ajoute la photo</b><br>Glisse-la ici, clique, ou colle-la (Ctrl+V)</div>
             </div>
-            <img id="p-image-preview" src="" alt="" style="display:none; max-width:120px; border-radius:3px; margin-top:10px;">
-            <input type="url" id="p-image" placeholder="ou colle un lien direct ici" style="margin-top:10px;">
+            <div id="p-image-upload-status"></div>
           </div>
-          <div class="field">            <label>Prix (DT)</label>
-            <input type="number" id="p-price" step="0.001" min="0" required>
-          </div>
-          <div class="field">
-            <label>Stock</label>
-            <input type="number" id="p-stock" min="0" required>
-          </div>
-          <div class="field">
-            <label>Catégorie</label>
-            <select id="p-category">
-              <option value="">Choisir une catégorie…</option>
-              <option value="Sacs & accessoires">Sacs & accessoires</option>
-              <option value="Prêt-à-porter">Prêt-à-porter</option>
-              <option value="Bijoux">Bijoux</option>
-            </select>
-          </div>
-          <div class="field checkbox">
-            <input type="checkbox" id="p-live">
-            <label style="text-transform:none; font-size:13px;">Badge « vu en live »</label>
+          <div class="quick-fields">
+            <div class="field">
+              <label for="p-name">2. Nom</label>
+              <input type="text" id="p-name" required placeholder="Ex. Cardigan maille vert">
+            </div>
+            <div class="field">
+              <label for="p-price">3. Prix (DT)</label>
+              <input type="number" id="p-price" step="0.001" min="0" required inputmode="decimal" placeholder="Ex. 35">
+            </div>
+            <div class="field">
+              <label>4. Catégorie</label>
+              <div class="chips" id="cat-chips">
+                <button type="button" class="chip" data-cat="Fripe">Fripe</button>
+                <button type="button" class="chip" data-cat="Prêt-à-porter">Prêt-à-porter</button>
+                <button type="button" class="chip" data-cat="Bijoux">Bijoux</button>
+                <button type="button" class="chip" data-cat="Sacs & accessoires">Sacs & accessoires</button>
+              </div>
+            </div>
+            <details class="more">
+              <summary>Plus d'options (facultatif)</summary>
+              <div class="field" style="margin-top:12px;">
+                <label for="p-description">Description</label>
+                <textarea id="p-description" rows="2" placeholder="Taille, état, matière…"></textarea>
+              </div>
+              <div class="field" style="margin-top:10px;">
+                <label for="p-stock">Quantité en stock</label>
+                <input type="number" id="p-stock" min="0" value="1">
+              </div>
+              <div class="field checkbox" style="margin-top:10px;">
+                <input type="checkbox" id="p-live">
+                <label for="p-live" style="text-transform:none; font-size:13px;">Badge « vu en live »</label>
+              </div>
+            </details>
+            <div class="form-actions">
+              <button type="submit" class="btn big" id="submit-btn">Publier sur le site</button>
+              <button type="button" class="btn ghost" id="cancel-edit-btn" style="display:none;">Annuler</button>
+            </div>
+            <div class="form-msg" id="form-msg"></div>
           </div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn" id="submit-btn">Ajouter le produit</button>
-          <button type="button" class="btn ghost" id="cancel-edit-btn" style="display:none;">Annuler</button>
-        </div>
-        <div class="form-msg" id="form-msg"></div>
       </form>
     </div>
 
@@ -538,11 +560,10 @@
     document.getElementById('p-name').value = p.name;
     document.getElementById('p-description').value = p.description || '';
     document.getElementById('p-image').value = p.image_url || '';
-    document.getElementById('p-image-preview').src = p.image_url || '';
-    document.getElementById('p-image-preview').style.display = p.image_url ? 'block' : 'none';
+    showPreview(p.image_url || '');
     document.getElementById('p-price').value = (p.price_millimes / 1000);
     document.getElementById('p-stock').value = p.stock;
-    document.getElementById('p-category').value = p.category || '';
+    setCategory(p.category || '');
     document.getElementById('p-live').checked = !!p.is_live;
     document.getElementById('form-title').textContent = 'Modifier le produit';
     document.getElementById('submit-btn').textContent = 'Enregistrer les modifications';
@@ -555,46 +576,63 @@
     document.getElementById('product-form').reset();
     document.getElementById('p-id').value = '';
     document.getElementById('form-title').textContent = 'Ajouter un produit';
-    document.getElementById('submit-btn').textContent = 'Ajouter le produit';
+    document.getElementById('submit-btn').textContent = 'Publier sur le site';
     document.getElementById('cancel-edit-btn').style.display = 'none';
-    document.getElementById('p-image-preview').style.display = 'none';
+    showPreview('');
+    document.getElementById('p-stock').value = 1;
+    document.getElementById('p-image').value = '';
+    setCategory(lastCategory);
     document.getElementById('p-image-upload-status').textContent = '';
     document.getElementById('p-image-upload-status').className = '';
   }
 
-  document.getElementById('p-image-upload-btn').addEventListener('click', () => {
-    document.getElementById('p-image-file').click();
-  });
-
-  document.getElementById('p-image-file').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
+  let uploading = false;
+  let lastCategory = '';
+  function setCategory(cat){
+    document.getElementById('p-category').value = cat || '';
+    document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.toggle('on', c.dataset.cat === cat));
+  }
+  document.querySelectorAll('#cat-chips .chip').forEach(c => c.addEventListener('click', () => setCategory(c.dataset.cat)));
+  function showPreview(src){
+    const img = document.getElementById('p-image-preview');
+    img.src = src || ''; img.style.display = src ? 'block' : 'none';
+    document.getElementById('dropzone').classList.toggle('has-img', !!src);
+  }
+  async function uploadPhoto(file){
+    if(!file || !file.type.startsWith('image/')) return;
     const statusEl = document.getElementById('p-image-upload-status');
-    statusEl.className = '';
-    statusEl.textContent = 'Envoi en cours…';
-
+    const submitBtn = document.getElementById('submit-btn');
+    showPreview(URL.createObjectURL(file));
+    statusEl.className = ''; statusEl.textContent = 'Envoi de la photo…';
+    uploading = true; submitBtn.disabled = true;
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
     try{
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
       const data = await res.json();
-      if(!res.ok || !data.secure_url){
-        throw new Error(data.error?.message || 'Échec de l\'envoi');
-      }
+      if(!res.ok || !data.secure_url) throw new Error(data.error?.message || "Échec de l'envoi");
       document.getElementById('p-image').value = data.secure_url;
-      document.getElementById('p-image-preview').src = data.secure_url;
-      document.getElementById('p-image-preview').style.display = 'block';
-      statusEl.textContent = 'Photo envoyée ✓';
-      statusEl.className = 'success';
+      statusEl.textContent = 'Photo prête ✓'; statusEl.className = 'success';
+      const nameEl = document.getElementById('p-name');
+      if(!nameEl.value) nameEl.focus();
     }catch(err){
-      statusEl.textContent = 'Échec de l\'envoi : ' + err.message;
-      statusEl.className = 'error';
+      statusEl.textContent = "Échec de l'envoi : " + err.message; statusEl.className = 'error';
+      showPreview('');
     }
+    uploading = false; submitBtn.disabled = false;
+  }
+  const dz = document.getElementById('dropzone');
+  const fileIn = document.getElementById('p-image-file');
+  dz.addEventListener('click', () => fileIn.click());
+  dz.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileIn.click(); } });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('on'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('on'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('on'); uploadPhoto(e.dataTransfer.files[0]); });
+  fileIn.addEventListener('change', e => { uploadPhoto(e.target.files[0]); fileIn.value = ''; });
+  document.addEventListener('paste', e => {
+    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+    if(item) uploadPhoto(item.getAsFile());
   });
 
   document.getElementById('cancel-edit-btn').addEventListener('click', resetForm);
@@ -613,12 +651,16 @@
     formMsg.textContent = '';
     formMsg.className = 'form-msg';
 
+    if(uploading){ formMsg.textContent = 'Attends la fin de l\'envoi de la photo…'; return; }
+    if(!document.getElementById('p-image').value){ formMsg.textContent = 'Ajoute d\'abord une photo.'; formMsg.classList.add('error'); return; }
+    if(!document.getElementById('p-category').value){ formMsg.textContent = 'Choisis une catégorie.'; formMsg.classList.add('error'); return; }
+    lastCategory = document.getElementById('p-category').value;
     const payload = {
       name: document.getElementById('p-name').value.trim(),
       description: document.getElementById('p-description').value.trim(),
       image_url: document.getElementById('p-image').value.trim(),
       price_millimes: Math.round(parseFloat(document.getElementById('p-price').value) * 1000),
-      stock: parseInt(document.getElementById('p-stock').value, 10),
+      stock: parseInt(document.getElementById('p-stock').value, 10) || 1,
       category: document.getElementById('p-category').value.trim(),
       is_live: document.getElementById('p-live').checked ? 1 : 0,
     };
