@@ -167,6 +167,9 @@
   .more summary{cursor:pointer; font-size:14px; color:#555;}
   .btn.big{font-size:15px; padding:16px 28px;}
   .quick-fields .field input{font-size:16px;}
+
+  .row-actions .sold-toggle{background:#6B4EFF; color:#fff; border:0; border-radius:999px; padding:6px 12px; cursor:pointer; font-size:12px;}
+  .row-actions .sold-toggle.on{background:#fff; color:#1A1A2E; border:1px solid #C9BFF2;}
 </style>
 </head>
 <body>
@@ -496,7 +499,7 @@
 
   async function loadProducts(){
     try{
-      const res = await fetch(`${API_BASE}/api/products`);
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1`);
       products = await res.json();
       renderTable();
     }catch(err){
@@ -525,6 +528,7 @@
         <td><button class="live-toggle ${p.is_live ? 'on' : ''}" data-id="${p.id}">${p.is_live ? 'En live' : 'Off'}</button></td>
         <td>
           <div class="row-actions">
+            <button class="sold-toggle ${p.stock <= 0 ? 'on' : ''}" data-id="${p.id}">${p.stock <= 0 ? 'Remettre en vente' : 'Marquer vendu'}</button>
             <button class="edit" data-id="${p.id}">Modifier</button>
             <button class="delete" data-id="${p.id}">Suppr.</button>
           </div>
@@ -535,12 +539,28 @@
     tbody.querySelectorAll('.live-toggle').forEach(btn => {
       btn.addEventListener('click', () => toggleLive(Number(btn.dataset.id)));
     });
+    tbody.querySelectorAll('.sold-toggle').forEach(btn => {
+      btn.addEventListener('click', () => toggleSold(Number(btn.dataset.id)));
+    });
     tbody.querySelectorAll('.edit').forEach(btn => {
       btn.addEventListener('click', () => editProduct(Number(btn.dataset.id)));
     });
     tbody.querySelectorAll('.delete').forEach(btn => {
       btn.addEventListener('click', () => deleteProduct(Number(btn.dataset.id)));
     });
+  }
+
+  async function toggleSold(id){
+    const product = products.find(p => p.id === id);
+    if(!product) return;
+    try{
+      await fetch(`${API_BASE}/api/products/${id}`, {
+        method: 'PATCH',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ stock: product.stock > 0 ? 0 : 1 }),
+      });
+      loadProducts();
+    }catch(err){ alert("Impossible de mettre à jour l'article."); }
   }
 
   async function toggleLive(id){

@@ -6,9 +6,9 @@ const router = express.Router();
 
 // GET /api/products — catalogue public, avec filtres optionnels
 router.get('/', async (req, res) => {
-  const { category, live, search } = req.query;
+  const { category, live, search, include_sold } = req.query;
 
-  let sql = 'SELECT * FROM products WHERE stock > 0';
+  let sql = include_sold === '1' ? 'SELECT * FROM products WHERE 1=1' : 'SELECT * FROM products WHERE stock > 0';
   const args = [];
 
   if (category) { sql += ' AND category = ?'; args.push(category); }

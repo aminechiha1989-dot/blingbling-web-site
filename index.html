@@ -573,6 +573,14 @@
   .hero-dots button{width:9px; height:9px; padding:0; border-radius:99px; border:0; background:rgba(255,255,255,.6); cursor:pointer; transition:width .3s, background .3s;}
   .hero-dots button.on{width:24px; background:#fff;}
   .hero-visual .frame-tag{z-index:3;}
+
+  /* ---------- sticker vendu ---------- */
+  .sold-sticker{position:absolute; top:50%; left:50%; z-index:4; transform:translate(-50%,-50%) rotate(-12deg); background:#1A1A2E; color:#fff; font-family:var(--font-display); font-style:italic; font-weight:700; font-size:28px; padding:8px 26px; border-radius:12px; border:3px solid #fff; box-shadow:0 10px 30px -10px rgba(26,26,46,.6); letter-spacing:.02em; pointer-events:none;}
+  .product.sold .product-img img{filter:grayscale(.7) brightness(.92);}
+  .product.sold .unique-badge{display:none;}
+  .product.sold h3, .product.sold .price{opacity:.55;}
+  .product.sold .price{text-decoration:line-through;}
+  .product.sold .add-btn{opacity:.5; cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -834,7 +842,7 @@
 
   async function loadProducts(){
     try{
-      const res = await fetch(`${API_BASE}/api/products`);
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1`);
       products = await res.json();
       renderProducts();
       buildTicker();
@@ -850,7 +858,7 @@
     const track = document.querySelector('.ticker-track');
     if(!track) return;
 
-    const newest = [...products]
+    const newest = products.filter(p => p.stock > 0)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 8);
 
@@ -879,8 +887,9 @@
   function cardHtml(p){
     const pc = parseCat(p.category);
     return `
-      <div class="product" data-id="${p.id}">
+      <div class="product ${p.stock <= 0 ? 'sold' : ''}" data-id="${p.id}">
         <div class="product-img">
+          ${p.stock <= 0 ? '<span class="sold-sticker">Vendu</span>' : ''}
           ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
@@ -888,7 +897,7 @@
         <div class="p-row"><h3>${p.name}</h3><span class="price">${formatPrice(p.price_millimes)}</span></div>
         <div class="sub">${pc.sub ? pc.sub + (p.description ? ' · ' : '') : ''}${p.description || ''}</div>
         <button class="add-btn" data-id="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>
-          ${p.stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier'}
+          ${p.stock <= 0 ? 'Vendu' : 'Ajouter au panier'}
         </button>
       </div>`;
   }
@@ -911,8 +920,10 @@
     grid.querySelectorAll('.product').forEach(card => card.addEventListener('click', () => openQuickView(Number(card.dataset.id))));
     grid.querySelectorAll('.see-all').forEach(b => b.addEventListener('click', () => setFilter(b.dataset.filter, b.dataset.sub || '')));
   }
+  const soldLast = (arr) => [...arr].sort((a, b) => (a.stock <= 0) - (b.stock <= 0));
   function group(title, items, max, filter, sub){
     if(!items.length) return '';
+    items = soldLast(items);
     const more = max && items.length > max ? `<button type="button" class="see-all" data-filter="${filter}" data-sub="${sub||''}">Voir tout (${items.length}) →</button>` : '';
     return `<div class="group"><div class="group-head"><h3>${title}</h3>${more}</div><div class="products">${(max ? items.slice(0, max) : items).map(cardHtml).join('')}</div></div>`;
   }
@@ -925,14 +936,14 @@
       const list = products.filter(p => (p.name + ' ' + (p.description||'') + ' ' + (p.category||'')).toLowerCase().includes(term));
       titleEl.innerHTML = `Résultats pour « ${searchTerm} » <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''}.`;
-      html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucun résultat.</p>';
+      html = list.length ? `<div class="products">${soldLast(list).map(cardHtml).join('')}</div>` : '<p class="empty">Aucun résultat.</p>';
     } else if(activeCategory){
       const inCat = products.filter(p => parseCat(p.category).main === activeCategory);
       titleEl.innerHTML = `${activeSub ? activeCategory + ' · ' + activeSub : activeCategory} <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       if(activeSub){
         const list = inCat.filter(p => parseCat(p.category).sub === activeSub);
         subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''} disponible${list.length !== 1 ? 's' : ''}.`;
-        html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucune pièce ici pour l’instant. Reviens après le prochain live !</p>';
+        html = list.length ? `<div class="products">${soldLast(list).map(cardHtml).join('')}</div>` : '<p class="empty">Aucune pièce ici pour l’instant. Reviens après le prochain live !</p>';
       } else {
         subEl.textContent = `${inCat.length} pièce${inCat.length !== 1 ? 's' : ''} disponible${inCat.length !== 1 ? 's' : ''}.`;
         (CAT_TREE[activeCategory] || []).forEach(sub => { html += group(sub, inCat.filter(p => parseCat(p.category).sub === sub), 4, activeCategory, sub); });
@@ -942,7 +953,7 @@
     } else {
       titleEl.textContent = 'Toutes nos pièces';
       subEl.textContent = "Pièces uniques, prix fixes. Quand c'est parti, c'est parti.";
-      const newest = [...products].sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
+      const newest = products.filter(p => p.stock > 0).sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
       html += group('Nouveautés', newest, 0);
       CAT_ORDER.forEach(cat => { html += group(cat, products.filter(p => parseCat(p.category).main === cat), 4, cat, ''); });
       html += group('Autres pièces', products.filter(p => !CAT_ORDER.includes(parseCat(p.category).main)), 0);
@@ -966,7 +977,7 @@
     const slides = [];
     const base = bgUrl(hero); if(base) slides.push({ img: base, cat: '' });
     CAT_ORDER.forEach(cat => {
-      const withImg = products.filter(p => parseCat(p.category).main === cat && p.image_url)
+      const withImg = products.filter(p => parseCat(p.category).main === cat && p.image_url && p.stock > 0)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       let img = withImg[0] && withImg[0].image_url;
       if(!img){ const tile = document.querySelector(`.cat-card[data-category="${cat}"] .cat-bg`); img = bgUrl(tile); }
@@ -1037,7 +1048,7 @@
     document.getElementById('qv-desc').textContent = p.description || '';
     const qvAdd = document.getElementById('qv-add');
     qvAdd.disabled = p.stock <= 0;
-    qvAdd.textContent = p.stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier';
+    qvAdd.textContent = p.stock <= 0 ? 'Vendu' : 'Ajouter au panier';
     qvAdd.onclick = () => { addToCart(id); closeQuickView(); };
     document.getElementById('quickview-overlay').classList.add('open');
   }
