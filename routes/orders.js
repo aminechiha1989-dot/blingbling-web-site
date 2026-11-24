@@ -62,6 +62,36 @@ async function notifyNtfy(order, items) {
   }
 }
 
+// ---------- Notification WhatsApp (Green-API) ----------
+// Variables Render : GREENAPI_ID, GREENAPI_TOKEN, GREENAPI_PHONE (ex. 21697565783), GREENAPI_URL (optionnel)
+async function notifyGreenApi(order, items) {
+  const id = process.env.GREENAPI_ID;
+  const token = process.env.GREENAPI_TOKEN;
+  const phone = (process.env.GREENAPI_PHONE || '').replace(/\D/g, '');
+  if (!id || !token || !phone) return;
+  const base = (process.env.GREENAPI_URL || 'https://api.green-api.com').replace(/\/$/, '');
+  const dt = (m) => (Number(m) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' DT';
+  const message = [
+    `*Nouvelle commande #${order.id}*`,
+    ...items.map(i => `- ${i.product_name} x${i.quantity} : ${dt(i.unit_price_millimes * i.quantity)}`),
+    `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
+    ``,
+    `Nom : ${order.customer_name}`,
+    `Tél : ${order.phone}`,
+    `Adresse : ${order.address}, ${order.city}`,
+  ].join('\n');
+  try {
+    const r = await fetch(`${base}/waInstance${id}/sendMessage/${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: `${phone}@c.us`, message }),
+    });
+    if (!r.ok) console.error('Notification Green-API échouée :', r.status, await r.text());
+  } catch (err) {
+    console.error('Notification Green-API échouée :', err.message);
+  }
+}
+
 router.post('/', async (req, res) => {
   const { customer_name, phone, city, address, payment_method, items } = req.body;
 
@@ -118,7 +148,8 @@ router.post('/', async (req, res) => {
     const orderItems = await client.execute({ sql: 'SELECT * FROM order_items WHERE order_id = ?', args: [orderId] });
     res.status(201).json({ ...order.rows[0], items: orderItems.rows });
     notifyWhatsApp(order.rows[0], orderItems.rows);
-    notifyNtfy(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
+    notifyNtfy(order.rows[0], orderItems.rows);
+    notifyGreenApi(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
   } catch (err) {
     await tx.rollback();
     res.status(400).json({ error: err.message });
