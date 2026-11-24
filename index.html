@@ -1397,7 +1397,7 @@
         `Commande #${data.id} enregistrée.`;
       const lines = Object.entries(cart).map(([pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return pr ? `• ${pr.name} x${q} — ${formatPrice(pr.price_millimes * q)}` : ''; }).filter(Boolean);
       const total = Object.entries(cart).reduce((t, [pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return t + (pr ? pr.price_millimes * q : 0); }, 0);
-      const msg = `Bonjour Blingbling 👋\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nTotal : ${formatPrice(total)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
+      const msg = `Bonjour Blingbling,\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nTotal : ${formatPrice(total)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
       document.getElementById('wa-confirm').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkoutForm.classList.remove('open');
       orderSuccess.classList.add('open');
