@@ -49,6 +49,7 @@ async function notifyNtfy(order, items) {
     const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
       method: 'POST',
       headers: {
+        ...(process.env.NTFY_TOKEN ? { 'Authorization': `Bearer ${process.env.NTFY_TOKEN}` } : {}),
         'Title': `Nouvelle commande #${order.id} - ${dt(order.total_millimes)}`,
         'Priority': 'high',
         'Tags': 'shopping_bags',
