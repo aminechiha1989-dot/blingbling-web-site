@@ -5,6 +5,32 @@ const { requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // POST /api/orders — créer une commande depuis le site
+// ---------- Notification WhatsApp (CallMeBot) ----------
+// Variables Render : WHATSAPP_NOTIFY_PHONE (ex. 21650202054) et CALLMEBOT_APIKEY
+async function notifyWhatsApp(order, items) {
+  const phone = process.env.WHATSAPP_NOTIFY_PHONE;
+  const apikey = process.env.CALLMEBOT_APIKEY;
+  if (!phone || !apikey) return;
+  const dt = (m) => (Number(m) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' DT';
+  const lines = items.map(i => `- ${i.product_name} x${i.quantity} : ${dt(i.unit_price_millimes * i.quantity)}`);
+  const text = [
+    `🛍️ Nouvelle commande #${order.id}`,
+    ...lines,
+    `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
+    ``,
+    `👤 ${order.customer_name}`,
+    `📞 ${order.phone}`,
+    `📍 ${order.address}, ${order.city}`,
+  ].join('\n');
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apikey)}`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) console.error('Notification WhatsApp échouée :', r.status, await r.text());
+  } catch (err) {
+    console.error('Notification WhatsApp échouée :', err.message);
+  }
+}
+
 router.post('/', async (req, res) => {
   const { customer_name, phone, city, address, payment_method, items } = req.body;
 
@@ -60,6 +86,7 @@ router.post('/', async (req, res) => {
     const order = await client.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [orderId] });
     const orderItems = await client.execute({ sql: 'SELECT * FROM order_items WHERE order_id = ?', args: [orderId] });
     res.status(201).json({ ...order.rows[0], items: orderItems.rows });
+    notifyWhatsApp(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
   } catch (err) {
     await tx.rollback();
     res.status(400).json({ error: err.message });
