@@ -647,6 +647,26 @@
   .zb-tools{position:absolute; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:2;}
   .zb-tools button{min-width:48px; height:48px; border-radius:999px; border:0; background:#fff; font-size:20px; font-weight:700; cursor:pointer; padding:0 14px;}
   .zb-hint{position:absolute; top:24px; left:16px; right:80px; color:#fff; font-size:13px; opacity:.75;}
+
+  /* ---------- vérification taille + confirmation WhatsApp ---------- */
+  .size-check{position:fixed; inset:0; z-index:950; background:rgba(26,26,46,.55); display:none; align-items:center; justify-content:center; padding:16px;}
+  .size-check.open{display:flex;}
+  .sc-card{position:relative; background:#fff; border-radius:20px; padding:24px; width:100%; max-width:440px; max-height:92vh; overflow-y:auto; animation:fadeUp .3s ease;}
+  .sc-card h3{font-family:var(--font-display); font-size:24px; margin:0 0 14px;}
+  .sc-close{position:absolute; top:12px; right:12px; width:40px; height:40px; border-radius:999px; border:0; background:var(--cream-2); cursor:pointer; font-size:16px;}
+  .sc-row{display:grid; grid-template-columns:96px 1fr; gap:14px; align-items:start;}
+  .sc-row img{width:96px; height:128px; object-fit:cover; border-radius:12px; background:var(--cream-2);}
+  .sc-name{font-weight:700; font-size:16px;} .sc-price{font-weight:800; font-size:18px; margin:4px 0 10px;}
+  .sc-info{display:flex; flex-direction:column; font-size:13px; margin-bottom:6px;} .sc-info span{color:#6B6B6B; font-size:12px;}
+  .sc-warn{font-size:13px; background:var(--cream-2); border-radius:12px; padding:10px 12px; margin:16px 0 12px; line-height:1.5;}
+  .sc-check{display:flex; gap:10px; align-items:flex-start; font-size:14px; font-weight:600; cursor:pointer; min-height:44px;}
+  .sc-check input{width:22px; height:22px; flex:none; accent-color:#6B4EFF; margin-top:1px;}
+  .sc-actions{display:grid; grid-template-columns:1fr 1.4fr; gap:10px; margin-top:14px;}
+  .sc-actions .btn{justify-content:center; text-align:center; min-height:48px;}
+  #sc-add:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .wa-step{font-weight:600; margin-top:14px;}
+  .wa-btn{background:#1DA851 !important; border-color:#1DA851 !important; margin-top:8px; justify-content:center; width:100%; min-height:50px; font-size:15px !important;}
+  .wa-note{font-size:12px; color:#6B6B6B; margin-top:10px;}
 </style>
 </head>
 <body>
@@ -858,8 +878,11 @@
 
     <div class="order-success" id="order-success">
       <div class="big">✓</div>
-      <h4>Commande envoyée !</h4>
+      <h4>Plus qu'une étape !</h4>
       <p id="order-success-detail">On te contacte vite pour confirmer la livraison.</p>
+      <p class="wa-step">Pour valider ta commande, envoie-nous le message de confirmation sur WhatsApp :</p>
+      <a class="btn wa-btn" id="wa-confirm" href="#" target="_blank" rel="noopener">Confirmer sur WhatsApp</a>
+      <p class="wa-note">Ta commande est enregistrée et sera expédiée après ta confirmation.</p>
     </div>
   </div>
   <div class="drawer-foot" id="drawer-foot">
@@ -891,6 +914,28 @@
     <button type="button" id="zb-in" aria-label="Zoomer">+</button>
   </div>
   <div class="zb-hint">Pince ou double-tape pour zoomer · glisse pour te déplacer</div>
+</div>
+
+<div class="size-check" id="size-check" role="dialog" aria-modal="true" aria-labelledby="sc-title">
+  <div class="sc-card">
+    <button type="button" class="sc-close" id="sc-close" aria-label="Fermer">✕</button>
+    <h3 id="sc-title">Vérifie avant d'ajouter</h3>
+    <div class="sc-row">
+      <img id="sc-img" src="" alt="">
+      <div>
+        <div class="sc-name" id="sc-name"></div>
+        <div class="sc-price" id="sc-price"></div>
+        <div class="sc-info"><span>Taille / détails</span><b id="sc-size"></b></div>
+        <div class="sc-info"><span>Catégorie</span><b id="sc-cat"></b></div>
+      </div>
+    </div>
+    <p class="sc-warn">Pièce de seconde main ou unique : pas d'échange pour une erreur de taille. Vérifie bien les mesures avant d'ajouter.</p>
+    <label class="sc-check"><input type="checkbox" id="sc-ok"> J'ai vérifié la taille et l'état de l'article</label>
+    <div class="sc-actions">
+      <button type="button" class="btn ghost" id="sc-cancel">Annuler</button>
+      <button type="button" class="btn" id="sc-add" disabled>Ajouter au panier</button>
+    </div>
+  </div>
 </div>
 <script>
   const API_BASE = 'https://blingbling-b7cg.onrender.com';
@@ -993,7 +1038,7 @@
   }
   function bindCards(){
     observeReveal(grid.querySelectorAll('.product, .group-head'));
-    grid.querySelectorAll('.add-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); addToCart(Number(btn.dataset.id)); }));
+    grid.querySelectorAll('.add-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); askSizeCheck(Number(btn.dataset.id)); }));
     grid.querySelectorAll('.product').forEach(card => card.addEventListener('click', () => openQuickView(Number(card.dataset.id))));
     grid.querySelectorAll('.see-all').forEach(b => b.addEventListener('click', () => setFilter(b.dataset.filter, b.dataset.sub || '')));
   }
@@ -1094,6 +1139,30 @@
     show(0); restart();
   }
 
+
+  // ---------- étape « vérifie la taille » avant l'ajout au panier ----------
+  const WHATSAPP_NUMBER = '21697565783';
+  let scId = null;
+  function askSizeCheck(id){
+    const p = products.find(x => x.id === id); if(!p || p.stock <= 0) return;
+    scId = id;
+    const pc = parseCat(p.category);
+    const img = document.getElementById('sc-img');
+    img.src = p.image_url || ''; img.alt = p.name; img.style.visibility = p.image_url ? 'visible' : 'hidden';
+    document.getElementById('sc-name').textContent = p.name;
+    document.getElementById('sc-price').textContent = formatPrice(p.price_millimes);
+    document.getElementById('sc-size').textContent = p.description || 'Non précisée — demande-nous sur WhatsApp';
+    document.getElementById('sc-cat').textContent = [pc.main, pc.sub].filter(Boolean).join(' › ') || '—';
+    document.getElementById('sc-ok').checked = false;
+    document.getElementById('sc-add').disabled = true;
+    document.getElementById('size-check').classList.add('open');
+  }
+  function closeSizeCheck(){ document.getElementById('size-check').classList.remove('open'); scId = null; }
+  document.getElementById('sc-ok').addEventListener('change', (e) => { document.getElementById('sc-add').disabled = !e.target.checked; });
+  document.getElementById('sc-add').addEventListener('click', () => { const id = scId; closeSizeCheck(); if(id) addToCart(id); });
+  document.getElementById('sc-cancel').addEventListener('click', closeSizeCheck);
+  document.getElementById('sc-close').addEventListener('click', closeSizeCheck);
+  document.getElementById('size-check').addEventListener('click', (e) => { if(e.target.id === 'size-check') closeSizeCheck(); });
   // ---------- zoom sur la photo de l'article ----------
   (function(){
     const wrap = document.getElementById('qv-img-wrap');
@@ -1194,7 +1263,7 @@
     const qvAdd = document.getElementById('qv-add');
     qvAdd.disabled = p.stock <= 0;
     qvAdd.textContent = p.stock <= 0 ? 'Vendu' : 'Ajouter au panier';
-    qvAdd.onclick = () => { addToCart(id); closeQuickView(); };
+    qvAdd.onclick = () => { closeQuickView(); askSizeCheck(id); };
     document.getElementById('quickview-overlay').classList.add('open');
   }
   function closeQuickView(){
@@ -1325,13 +1394,19 @@
       }
 
       document.getElementById('order-success-detail').textContent =
-        `Commande #${data.id} — on te contacte au ${phone} pour confirmer.`;
+        `Commande #${data.id} enregistrée.`;
+      const lines = Object.entries(cart).map(([pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return pr ? `• ${pr.name} x${q} — ${formatPrice(pr.price_millimes * q)}` : ''; }).filter(Boolean);
+      const total = Object.entries(cart).reduce((t, [pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return t + (pr ? pr.price_millimes * q : 0); }, 0);
+      const msg = `Bonjour Blingbling 👋\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nTotal : ${formatPrice(total)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
+      document.getElementById('wa-confirm').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkoutForm.classList.remove('open');
       orderSuccess.classList.add('open');
       drawerFoot.style.display = 'none';
 
       cart = {};
       renderCart();
+      drawerFoot.style.display = 'none';
+      drawerTitle.textContent = 'Confirmation';
       loadProducts(); // rafraîchit les stocks
     }catch(err){
       formError.textContent = 'Impossible de contacter le serveur.';
