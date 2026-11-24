@@ -31,6 +31,36 @@ async function notifyWhatsApp(order, items) {
   }
 }
 
+// ---------- Notification sur le téléphone (ntfy) ----------
+// Variable Render : NTFY_TOPIC (nom secret, ne jamais le mettre dans le code : le dépôt est public)
+async function notifyNtfy(order, items) {
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic) return;
+  const dt = (m) => (Number(m) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' DT';
+  const body = [
+    ...items.map(i => `• ${i.product_name} x${i.quantity} : ${dt(i.unit_price_millimes * i.quantity)}`),
+    `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
+    ``,
+    `Nom : ${order.customer_name}`,
+    `Tél : ${order.phone}`,
+    `Adresse : ${order.address}, ${order.city}`,
+  ].join('\n');
+  try {
+    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+      method: 'POST',
+      headers: {
+        'Title': `Nouvelle commande #${order.id} - ${dt(order.total_millimes)}`,
+        'Priority': 'high',
+        'Tags': 'shopping_bags',
+      },
+      body,
+    });
+    if (!r.ok) console.error('Notification ntfy échouée :', r.status);
+  } catch (err) {
+    console.error('Notification ntfy échouée :', err.message);
+  }
+}
+
 router.post('/', async (req, res) => {
   const { customer_name, phone, city, address, payment_method, items } = req.body;
 
@@ -86,7 +116,8 @@ router.post('/', async (req, res) => {
     const order = await client.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [orderId] });
     const orderItems = await client.execute({ sql: 'SELECT * FROM order_items WHERE order_id = ?', args: [orderId] });
     res.status(201).json({ ...order.rows[0], items: orderItems.rows });
-    notifyWhatsApp(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
+    notifyWhatsApp(order.rows[0], orderItems.rows);
+    notifyNtfy(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
   } catch (err) {
     await tx.rollback();
     res.status(400).json({ error: err.message });
