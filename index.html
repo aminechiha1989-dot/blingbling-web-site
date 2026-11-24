@@ -632,6 +632,21 @@
     input, select, textarea{font-size:16px !important;}
     .quickview-card{max-height:92vh; overflow-y:auto;}
   }
+
+  /* ---------- zoom photo ---------- */
+  .qv-img-wrap{position:relative; cursor:zoom-in;}
+  .qv-img-wrap img{transition:transform .25s ease;}
+  @media (hover:hover) and (pointer:fine){ .qv-img-wrap.hovering img{transform:scale(2.2);} }
+  .zoom-btn{position:absolute; right:12px; bottom:12px; width:46px; height:46px; border-radius:999px; border:0; background:rgba(255,255,255,.95); box-shadow:0 6px 18px -6px rgba(26,26,46,.4); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2;}
+  .zoom-btn svg{width:22px; height:22px; fill:none; stroke:#1A1A2E; stroke-width:2; stroke-linecap:round;}
+  .zoom-box{position:fixed; inset:0; z-index:1000; background:rgba(14,14,26,.96); display:none; overflow:hidden; touch-action:none; user-select:none;}
+  .zoom-box.open{display:block;}
+  .zoom-box img{position:absolute; left:50%; top:50%; max-width:100vw; max-height:100vh; transform-origin:center center; will-change:transform; cursor:grab;}
+  .zoom-box img.dragging{cursor:grabbing;}
+  .zb-close{position:absolute; top:14px; right:14px; width:48px; height:48px; border-radius:999px; border:0; background:#fff; font-size:20px; cursor:pointer; z-index:2;}
+  .zb-tools{position:absolute; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:2;}
+  .zb-tools button{min-width:48px; height:48px; border-radius:999px; border:0; background:#fff; font-size:20px; font-weight:700; cursor:pointer; padding:0 14px;}
+  .zb-hint{position:absolute; top:24px; left:16px; right:80px; color:#fff; font-size:13px; opacity:.75;}
 </style>
 </head>
 <body>
@@ -856,7 +871,7 @@
 <div class="quickview-overlay" id="quickview-overlay">
   <div class="quickview-card">
     <button class="qv-close" id="qv-close">×</button>
-    <div class="qv-img-wrap"><img id="qv-img" src="" alt=""></div>
+    <div class="qv-img-wrap" id="qv-img-wrap"><img id="qv-img" src="" alt=""><button type="button" class="zoom-btn" id="zoom-btn" aria-label="Agrandir la photo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg></button></div>
     <div class="qv-info">
       <h3 id="qv-name"></h3>
       <div class="price" id="qv-price"></div>
@@ -866,6 +881,17 @@
   </div>
 </div>
 
+
+<div class="zoom-box" id="zoom-box" role="dialog" aria-modal="true" aria-label="Photo en grand">
+  <img id="zoom-img" src="" alt="">
+  <button type="button" class="zb-close" id="zb-close" aria-label="Fermer">✕</button>
+  <div class="zb-tools">
+    <button type="button" id="zb-out" aria-label="Dézoomer">−</button>
+    <button type="button" id="zb-reset" aria-label="Taille normale">1:1</button>
+    <button type="button" id="zb-in" aria-label="Zoomer">+</button>
+  </div>
+  <div class="zb-hint">Pince ou double-tape pour zoomer · glisse pour te déplacer</div>
+</div>
 <script>
   const API_BASE = 'https://blingbling-b7cg.onrender.com';
 
@@ -1067,6 +1093,59 @@
     const restart = () => { clearInterval(heroTimer); heroTimer = setInterval(() => show(heroIdx + 1), 4000); };
     show(0); restart();
   }
+
+  // ---------- zoom sur la photo de l'article ----------
+  (function(){
+    const wrap = document.getElementById('qv-img-wrap');
+    const qvImg = document.getElementById('qv-img');
+    const box = document.getElementById('zoom-box');
+    const zImg = document.getElementById('zoom-img');
+    const fine = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    if(fine){
+      wrap.addEventListener('mouseenter', () => { if(qvImg.src) wrap.classList.add('hovering'); });
+      wrap.addEventListener('mouseleave', () => { wrap.classList.remove('hovering'); qvImg.style.transformOrigin = 'center center'; });
+      wrap.addEventListener('mousemove', (e) => {
+        const r = wrap.getBoundingClientRect();
+        qvImg.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
+      });
+    }
+    let scale = 1, tx = 0, ty = 0;
+    const pts = new Map(); let startDist = 0, startScale = 1, last = null, lastTap = 0;
+    const apply = () => { zImg.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale})`; };
+    const clamp = () => { scale = Math.min(5, Math.max(1, scale)); if(scale === 1){ tx = 0; ty = 0; } };
+    const setScale = (v) => { scale = v; clamp(); apply(); };
+    function openZoom(){
+      if(!qvImg.src || qvImg.style.display === 'none') return;
+      zImg.src = qvImg.src; zImg.alt = qvImg.alt;
+      scale = fine ? 1 : 1; tx = ty = 0; apply();
+      box.classList.add('open'); document.body.style.overflow = 'hidden';
+    }
+    function closeZoom(){ box.classList.remove('open'); document.body.style.overflow = ''; pts.clear(); }
+    document.getElementById('zoom-btn').addEventListener('click', (e) => { e.stopPropagation(); openZoom(); });
+    wrap.addEventListener('click', openZoom);
+    document.getElementById('zb-close').addEventListener('click', closeZoom);
+    document.getElementById('zb-in').addEventListener('click', () => setScale(scale * 1.5));
+    document.getElementById('zb-out').addEventListener('click', () => setScale(scale / 1.5));
+    document.getElementById('zb-reset').addEventListener('click', () => setScale(1));
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && box.classList.contains('open')) closeZoom(); });
+    box.addEventListener('wheel', (e) => { e.preventDefault(); setScale(scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)); }, { passive: false });
+    zImg.addEventListener('dblclick', () => setScale(scale > 1 ? 1 : 2.5));
+    zImg.addEventListener('pointerdown', (e) => {
+      zImg.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if(pts.size === 2){ const [a, b] = [...pts.values()]; startDist = Math.hypot(a.x - b.x, a.y - b.y); startScale = scale; }
+      else { last = { x: e.clientX, y: e.clientY }; zImg.classList.add('dragging');
+        const now = Date.now(); if(e.pointerType === 'touch' && now - lastTap < 300) setScale(scale > 1 ? 1 : 2.5); lastTap = now; }
+    });
+    zImg.addEventListener('pointermove', (e) => {
+      if(!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if(pts.size === 2){ const [a, b] = [...pts.values()]; setScale(startScale * Math.hypot(a.x - b.x, a.y - b.y) / startDist); }
+      else if(last && scale > 1){ tx += e.clientX - last.x; ty += e.clientY - last.y; last = { x: e.clientX, y: e.clientY }; apply(); }
+    });
+    const up = (e) => { pts.delete(e.pointerId); if(pts.size === 0){ last = null; zImg.classList.remove('dragging'); } else { const v = [...pts.values()][0]; last = { x: v.x, y: v.y }; } };
+    zImg.addEventListener('pointerup', up); zImg.addEventListener('pointercancel', up);
+    box.addEventListener('click', (e) => { if(e.target === box) closeZoom(); });
+  })();
   // ---------- animations au défilement ----------
   const revealObs = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
     entries.forEach(en => { if(en.isIntersecting){ en.target.classList.add('in'); revealObs.unobserve(en.target); } });
@@ -1107,6 +1186,8 @@
     if(!p) return;
     document.getElementById('qv-img').src = p.image_url || '';
     document.getElementById('qv-img').style.display = p.image_url ? 'block' : 'none';
+    document.getElementById('qv-img').alt = p.name;
+    document.getElementById('zoom-btn').style.display = p.image_url ? 'flex' : 'none';
     document.getElementById('qv-name').textContent = p.name;
     document.getElementById('qv-price').textContent = formatPrice(p.price_millimes);
     document.getElementById('qv-desc').textContent = p.description || '';
