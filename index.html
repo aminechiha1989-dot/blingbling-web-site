@@ -719,6 +719,15 @@
     .product:hover .product-img img.cutout{transform:scale(1.06);}
   }
   .product-img .sold-sticker, .product-img .live-badge, .product-img .unique-badge{z-index:3;}
+  /* boutons « Ajouter au panier » alignés en bas de chaque carte */
+  .product{display:flex !important; flex-direction:column;}
+  .product .product-img{flex:none;}
+  .product .add-btn{margin-top:auto !important;}
+  .product .size-pills, .product .cond-badge{align-self:flex-start;}
+  .product .sub + .add-btn, .product .size-pills + .add-btn, .product .cond-badge + .add-btn{margin-top:auto !important;}
+  .products{align-items:stretch;}
+  .product > .add-btn{position:relative; top:0;}
+  .product .p-row + .sub{margin-bottom:8px;}
 </style>
 </head>
 <body>
