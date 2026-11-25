@@ -713,8 +713,9 @@
   .product{transition:transform .5s cubic-bezier(.2,.7,.2,1) !important;}
   .product .product-img{transition:box-shadow .5s ease;}
   @media (hover:hover){
-    .product:hover .product-img img.orig-photo{opacity:1; transform:scale(1.06);}
-    .product:hover .product-img img.cutout{opacity:0; transform:scale(1.06);}
+    .product:hover .product-img.orig-ready img.orig-photo{opacity:1; transform:scale(1.06);}
+    .product:hover .product-img.orig-ready img.cutout{opacity:0;}
+    .product:hover .product-img img.cutout{transform:scale(1.06);}
   }
   .product-img .sold-sticker, .product-img .live-badge, .product-img .unique-badge{z-index:3;}
 </style>
@@ -1085,7 +1086,7 @@
       <div class="product ${p.stock <= 0 ? 'sold' : ''}" data-id="${p.id}">
         <div class="product-img">
           ${p.stock <= 0 ? '<span class="sold-sticker">Vendu</span>' : ''}
-          ${p.image_url ? (cutSrc(p) ? `<img src="${p.image_url}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="orig-photo"><img src="${cutSrc(p)}" alt="${p.name}" loading="lazy" class="cutout">` : `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`) : ''}
+          ${p.image_url ? (cutSrc(p) ? `<img src="${lightSrc(p.image_url)}" alt="" aria-hidden="true" decoding="async" class="orig-photo" onload="this.parentNode.classList.add('orig-ready')"><img src="${cutSrc(p)}" alt="${p.name}" loading="lazy" class="cutout">` : `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`) : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
         </div>
@@ -1222,6 +1223,8 @@
   const CUTOUTS = new Set([14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]);
   const cutSrc = p => p.cutout_url || (CUTOUTS.has(p.id) ? `cutouts/${p.id}.webp?v=3` : '');
   const imgSrc = p => cutSrc(p) || p.image_url;
+  // version légère de la photo d'origine (Cloudinary redimensionne à la volée)
+  const lightSrc = u => (u || '').includes('res.cloudinary.com') && u.includes('/upload/') ? u.replace('/upload/', '/upload/w_700,c_limit,f_auto,q_auto/') : u;
 
   // ---------- Tailles : guide indicatif ----------
   const SIZE_GUIDE = {
