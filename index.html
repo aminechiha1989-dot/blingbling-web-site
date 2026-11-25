@@ -731,6 +731,13 @@
   /* prix bien visible dans la fiche article */
   #qv-price{font-size:30px !important; font-weight:700 !important; color:#5B3FD6 !important; margin:6px 0 12px !important; letter-spacing:-.01em;}
   @media (max-width:700px){ #qv-price{font-size:26px !important;} }
+  /* ---------- promo ---------- */
+  .promo-sticker{position:absolute; top:10px; right:10px; z-index:4; background:#E11D2E; color:#fff; font-weight:800; font-size:14px; padding:6px 10px; border-radius:999px; box-shadow:0 6px 14px -6px rgba(225,29,46,.6); transform:rotate(6deg); letter-spacing:.01em;}
+  .old-price{text-decoration:line-through; opacity:.5; font-weight:500; margin-right:6px; font-size:.85em;}
+  .promo-price{color:#E11D2E; font-weight:800;}
+  #qv-price .promo-price{color:#E11D2E !important;}
+  .promo-tag{display:inline-block; vertical-align:middle; font-size:13px; font-weight:800; color:#fff; background:#E11D2E; padding:3px 8px; border-radius:999px; margin-left:6px;}
+  .product .price{display:inline-flex; align-items:baseline; flex-wrap:wrap; justify-content:flex-end;}
 </style>
 </head>
 <body>
@@ -1075,7 +1082,7 @@
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 8);
 
-    const itemsHtml = newest.map(p => `<span class="ticker-item">${p.is_live ? '<span class="tag">● LIVE</span> ' : ''}${p.name} — ${formatPrice(p.price_millimes)} <span class="sep">/</span></span>`).join('');
+    const itemsHtml = newest.map(p => `<span class="ticker-item">${p.is_live ? '<span class="tag">● LIVE</span> ' : ''}${p.name} — ${formatPrice(effPrice(p))}${discountOf(p) ? ` (-${discountOf(p)}%)` : ''} <span class="sep">/</span></span>`).join('');
 
     const editAttrs = (typeof EDIT_MODE !== 'undefined' && EDIT_MODE) ? ' data-editable="next_live_text" contenteditable="true"' : '';
     const nextLiveHtml = `<span class="ticker-item"${editAttrs}>${siteNextLiveText} <span class="sep">/</span></span>`;
@@ -1103,11 +1110,12 @@
       <div class="product ${p.stock <= 0 ? 'sold' : ''}" data-id="${p.id}">
         <div class="product-img">
           ${p.stock <= 0 ? '<span class="sold-sticker">Vendu</span>' : ''}
+          ${discountOf(p) > 0 && p.stock > 0 ? `<span class="promo-sticker">-${discountOf(p)}%</span>` : ''}
           ${p.image_url ? (cutSrc(p) ? `<img src="${lightSrc(p.image_url)}" alt="" aria-hidden="true" decoding="async" class="orig-photo" onload="this.parentNode.classList.add('orig-ready')"><img src="${cutSrc(p)}" alt="${p.name}" loading="lazy" class="cutout">` : `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`) : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
         </div>
-        <div class="p-row"><h3>${p.name}</h3><span class="price">${formatPrice(p.price_millimes)}</span></div>
+        <div class="p-row"><h3>${p.name}</h3><span class="price">${priceHTML(p)}</span></div>
         <div class="sub">${pc.sub ? pc.sub + (p.description ? ' · ' : '') : ''}${p.description || ''}</div>
         ${p.condition ? `<div class="cond-badge cond-${p.condition.normalize('NFD').replace(/[^a-zA-Z]/g,'').toLowerCase()}">${p.condition}</div>` : ''}
         ${sizeList(p).length ? `<div class="size-pills">${sizeList(p).map(x => `<span>${x}</span>`).join('')}</div>` : ''}
@@ -1244,6 +1252,13 @@
   // version légère de la photo d'origine (Cloudinary redimensionne à la volée)
   const lightSrc = u => (u || '').includes('res.cloudinary.com') && u.includes('/upload/') ? u.replace('/upload/', '/upload/w_700,c_limit,f_auto,q_auto/') : u;
 
+  // ---------- promo ----------
+  const discountOf = p => Math.max(0, Math.min(90, Number(p.discount_percent) || 0));
+  const effPrice = p => Math.round(p.price_millimes * (100 - discountOf(p)) / 100);
+  const priceHTML = p => discountOf(p) > 0
+    ? `<span class="old-price">${formatPrice(p.price_millimes)}</span><span class="promo-price">${formatPrice(effPrice(p))}</span>`
+    : formatPrice(p.price_millimes);
+
   // ---------- Tailles : guide indicatif ----------
   const SIZE_GUIDE = {
     'XS':{fr:'34', h:'1,50–1,58 m', w:'40–48 kg'},
@@ -1267,7 +1282,7 @@
     const img = document.getElementById('sc-img');
     img.src = p.image_url || ''; img.alt = p.name; img.style.visibility = p.image_url ? 'visible' : 'hidden';
     document.getElementById('sc-name').textContent = p.name;
-    document.getElementById('sc-price').textContent = formatPrice(p.price_millimes);
+    document.getElementById('sc-price').innerHTML = priceHTML(p);
     document.getElementById('sc-size').textContent = sizeList(p).join(' · ') || p.description || 'Non précisée — demande-nous sur WhatsApp';
     document.getElementById('sc-guide').innerHTML = sizeGuideHTML(p);
     document.getElementById('sc-cond').textContent = p.condition || '—';
@@ -1377,7 +1392,7 @@
     document.getElementById('qv-img').alt = p.name;
     document.getElementById('zoom-btn').style.display = p.image_url ? 'flex' : 'none';
     document.getElementById('qv-name').textContent = p.name;
-    document.getElementById('qv-price').textContent = formatPrice(p.price_millimes);
+    document.getElementById('qv-price').innerHTML = priceHTML(p) + (discountOf(p) ? ` <span class="promo-tag">-${discountOf(p)}%</span>` : '');
     document.getElementById('qv-sizes').innerHTML = (p.condition ? `<div class="cond-badge">État : ${p.condition}</div>` : '') + sizeGuideHTML(p);
     document.getElementById('qv-desc').textContent = p.description || '';
     const qvAdd = document.getElementById('qv-add');
@@ -1420,14 +1435,14 @@
     cartItemsEl.innerHTML = ids.map(id => {
       const product = products.find(p => p.id === Number(id));
       if(!product) return '';
-      const lineTotal = product.price_millimes * cart[id];
+      const lineTotal = effPrice(product) * cart[id];
       total += lineTotal;
       return `
         <div class="cart-line">
           ${product.image_url ? `<img class="swatch" src="${product.image_url}" alt="${product.name}" loading="lazy">` : `<div class="swatch"></div>`}
           <div class="info">
             <h4>${product.name}</h4>
-            <span>${formatPrice(product.price_millimes)}</span>
+            <span>${priceHTML(product)}</span>
           </div>
           <div class="qty-controls">
             <button data-id="${id}" data-delta="-1">−</button>
@@ -1518,8 +1533,8 @@
 
       document.getElementById('order-success-detail').textContent =
         `Commande #${data.id} enregistrée.`;
-      const lines = Object.entries(cart).map(([pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return pr ? `• ${pr.name} x${q} — ${formatPrice(pr.price_millimes * q)}` : ''; }).filter(Boolean);
-      const total = Object.entries(cart).reduce((t, [pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return t + (pr ? pr.price_millimes * q : 0); }, 0);
+      const lines = Object.entries(cart).map(([pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return pr ? `• ${pr.name} x${q} — ${formatPrice(effPrice(pr) * q)}` : ''; }).filter(Boolean);
+      const total = Object.entries(cart).reduce((t, [pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return t + (pr ? effPrice(pr) * q : 0); }, 0);
       const msg = `Bonjour Blingbling,\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nLivraison : ${formatPrice(SHIPPING_MILLIMES)}\nTotal : ${formatPrice(total + SHIPPING_MILLIMES)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
       document.getElementById('wa-confirm').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkoutForm.classList.remove('open');

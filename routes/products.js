@@ -38,16 +38,16 @@ router.get('/:id', async (req, res) => {
 // --- Routes admin (protégées) ---
 
 router.post('/', requireAdmin, async (req, res) => {
-  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '', condition = '', cutout_url = '' } = req.body;
+  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '', condition = '', cutout_url = '', discount_percent = 0 } = req.body;
 
   if (!name || !price_millimes) {
     return res.status(400).json({ error: 'name et price_millimes sont requis' });
   }
 
   const result = await client.execute({
-    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes, condition, cutout_url)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes, condition, cutout_url],
+    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes, condition, cutout_url, discount_percent)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes, condition, cutout_url, Math.max(0, Math.min(90, parseInt(discount_percent, 10) || 0))],
   });
 
   const created = await client.execute({
@@ -64,14 +64,16 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   });
   if (existing.rows.length === 0) return res.status(404).json({ error: 'Produit introuvable' });
 
-  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes', 'condition', 'cutout_url'];
+  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes', 'condition', 'cutout_url', 'discount_percent'];
   const sets = [];
   const args = [];
 
   for (const field of fields) {
     if (req.body[field] !== undefined) {
       sets.push(`${field} = ?`);
-      args.push(field === 'is_live' ? (req.body[field] ? 1 : 0) : req.body[field]);
+      args.push(field === 'is_live' ? (req.body[field] ? 1 : 0)
+        : field === 'discount_percent' ? Math.max(0, Math.min(90, parseInt(req.body[field], 10) || 0))
+        : req.body[field]);
     }
   }
   if (sets.length === 0) return res.status(400).json({ error: 'Aucun champ à mettre à jour' });

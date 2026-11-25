@@ -260,6 +260,9 @@
             <div class="field">
               <label for="p-price">3. Prix (DT)</label>
               <input type="number" id="p-price" step="0.001" min="0" required inputmode="decimal" placeholder="Ex. 35">
+              <label for="p-discount" style="margin-top:10px;display:block">Promo (%) <span style="font-weight:400;opacity:.6">— laisse 0 si pas de promo</span></label>
+              <input type="number" id="p-discount" min="0" max="90" step="1" value="0" inputmode="numeric" placeholder="Ex. 20">
+              <div id="p-discount-hint" style="font-size:13px;margin-top:4px;color:#C0262D;font-weight:600"></div>
             </div>
             <div class="field">
               <label>4. Catégorie et sous-catégorie</label>
@@ -583,7 +586,7 @@
       <tr>
         <td class="c-img">${p.image_url ? `<img class="prod-thumb" src="${p.image_url}" alt="">` : `<div class="prod-thumb"></div>`}</td>
         <td class="prod-name c-name">${p.name}</td>
-        <td class="c-price">${formatPrice(p.price_millimes)}</td>
+        <td class="c-price">${p.discount_percent > 0 ? `<s style="opacity:.5">${formatPrice(p.price_millimes)}</s><br><b style="color:#C0262D">${formatPrice(Math.round(p.price_millimes*(100-p.discount_percent)/100))}</b> <small style="color:#C0262D">-${p.discount_percent}%</small>` : formatPrice(p.price_millimes)}</td>
         <td class="c-stock">Stock : ${p.stock}</td>
         <td class="c-cat">${p.category || '—'}</td>
         <td class="c-live"><button class="live-toggle ${p.is_live ? 'on' : ''}" data-id="${p.id}">${p.is_live ? 'En live' : 'Off'}</button></td>
@@ -671,6 +674,14 @@
   }
   setCondition('');
 
+  function updateDiscountHint(){
+    const price = parseFloat(document.getElementById('p-price').value) || 0;
+    const d = Math.max(0, Math.min(90, parseInt(document.getElementById('p-discount').value, 10) || 0));
+    document.getElementById('p-discount-hint').textContent = (d > 0 && price > 0) ? `Prix promo affiché : ${(Math.round(price*1000*(100-d)/100)/1000).toLocaleString('fr-FR',{maximumFractionDigits:3})} DT (-${d}%)` : '';
+  }
+  document.getElementById('p-discount').addEventListener('input', updateDiscountHint);
+  document.getElementById('p-price').addEventListener('input', updateDiscountHint);
+
   function editProduct(id){
     const p = products.find(p => p.id === id);
     if(!p) return;
@@ -681,6 +692,7 @@
     document.getElementById('p-image').value = p.image_url || '';
     showPreview(p.image_url || '');
     document.getElementById('p-price').value = (p.price_millimes / 1000);
+    document.getElementById('p-discount').value = p.discount_percent || 0; updateDiscountHint();
     document.getElementById('p-stock').value = p.stock;
     setCategory(p.category || '');
     setSizes(p.sizes || '');
@@ -694,6 +706,7 @@
   }
 
   function resetForm(){
+    document.getElementById('p-discount').value = 0; setTimeout(updateDiscountHint);
     setSizes('');
     document.getElementById('p-cutout').value = '';
     setCondition('');
@@ -840,6 +853,7 @@
       description: document.getElementById('p-description').value.trim(),
       image_url: document.getElementById('p-image').value.trim(),
       price_millimes: Math.round(parseFloat(document.getElementById('p-price').value) * 1000),
+      discount_percent: Math.max(0, Math.min(90, parseInt(document.getElementById('p-discount').value, 10) || 0)),
       stock: parseInt(document.getElementById('p-stock').value, 10) || 1,
       category: document.getElementById('p-category').value.trim(),
       is_live: document.getElementById('p-live').checked ? 1 : 0,

@@ -128,8 +128,10 @@ router.post('/', async (req, res) => {
       if (!product) throw new Error(`Produit ${product_id} introuvable`);
       if (product.stock < quantity) throw new Error(`Stock insuffisant pour ${product.name}`);
 
-      total += product.price_millimes * quantity;
-      resolvedItems.push({ product, quantity });
+      const d = Math.max(0, Math.min(90, Number(product.discount_percent) || 0));
+      const unit = Math.round(product.price_millimes * (100 - d) / 100); // prix après promo
+      total += unit * quantity;
+      resolvedItems.push({ product, quantity, unit });
     }
 
     total += SHIPPING; // frais de livraison, une fois par commande
@@ -141,11 +143,11 @@ router.post('/', async (req, res) => {
     });
     const orderId = orderResult.lastInsertRowid;
 
-    for (const { product, quantity } of resolvedItems) {
+    for (const { product, quantity, unit } of resolvedItems) {
       await tx.execute({
         sql: `INSERT INTO order_items (order_id, product_id, product_name, unit_price_millimes, quantity)
               VALUES (?, ?, ?, ?, ?)`,
-        args: [orderId, product.id, product.name, product.price_millimes, quantity],
+        args: [orderId, product.id, product.name, unit, quantity],
       });
       await tx.execute({
         sql: 'UPDATE products SET stock = stock - ? WHERE id = ?',
