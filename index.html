@@ -434,6 +434,7 @@
     display:flex; justify-content:space-between; font-family:var(--font-mono);
     font-size:15px; margin-bottom:14px;
   }
+  .drawer-foot .total-row.sub-row{font-size:13.5px; opacity:.75; margin-bottom:4px;}
   .drawer-foot .total-row b{font-family:var(--font-display); font-size:19px; font-weight:600;}
   .drawer-foot .btn{width:100%; justify-content:center;}
 
@@ -943,6 +944,8 @@
     </div>
   </div>
   <div class="drawer-foot" id="drawer-foot">
+    <div class="total-row sub-row"><span>Sous-total</span><span id="cart-subtotal">0 DT</span></div>
+    <div class="total-row sub-row"><span>Livraison</span><span id="cart-shipping">8 DT</span></div>
     <div class="total-row"><span>Total</span><b id="cart-total">0 DT</b></div>
     <button class="btn" id="checkout-btn">Passer la commande →</button>
   </div>
@@ -1009,6 +1012,7 @@
   const cartItemsEl = document.getElementById('cart-items');
   const cartCountEl = document.getElementById('cart-count');
   const cartTotalEl = document.getElementById('cart-total');
+  const SHIPPING_MILLIMES = 8000; // frais de livraison par commande
   const checkoutForm = document.getElementById('checkout-form');
   const orderSuccess = document.getElementById('order-success');
   const drawerFoot = document.getElementById('drawer-foot');
@@ -1395,6 +1399,7 @@
     if(ids.length === 0){
       cartItemsEl.innerHTML = '<p class="cart-empty">Ton panier est vide.</p>';
       cartTotalEl.textContent = '0 DT';
+      document.getElementById('cart-subtotal').textContent = '0 DT';
       drawerFoot.style.display = 'block';
       return;
     }
@@ -1421,7 +1426,9 @@
       `;
     }).join('');
 
-    cartTotalEl.textContent = formatPrice(total);
+    document.getElementById('cart-subtotal').textContent = formatPrice(total);
+    document.getElementById('cart-shipping').textContent = formatPrice(SHIPPING_MILLIMES);
+    cartTotalEl.textContent = formatPrice(total + SHIPPING_MILLIMES);
 
     cartItemsEl.querySelectorAll('[data-delta]').forEach(btn => {
       btn.addEventListener('click', () => changeQty(Number(btn.dataset.id), Number(btn.dataset.delta)));
@@ -1501,7 +1508,7 @@
         `Commande #${data.id} enregistrée.`;
       const lines = Object.entries(cart).map(([pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return pr ? `• ${pr.name} x${q} — ${formatPrice(pr.price_millimes * q)}` : ''; }).filter(Boolean);
       const total = Object.entries(cart).reduce((t, [pid, q]) => { const pr = products.find(x => x.id === Number(pid)); return t + (pr ? pr.price_millimes * q : 0); }, 0);
-      const msg = `Bonjour Blingbling,\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nTotal : ${formatPrice(total)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
+      const msg = `Bonjour Blingbling,\nJe confirme ma commande #${data.id} :\n${lines.join('\n')}\nLivraison : ${formatPrice(SHIPPING_MILLIMES)}\nTotal : ${formatPrice(total + SHIPPING_MILLIMES)} (paiement à la livraison)\n\nNom : ${name}\nTéléphone : ${phone}\nAdresse : ${address}, ${city}`;
       document.getElementById('wa-confirm').href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
       checkoutForm.classList.remove('open');
       orderSuccess.classList.add('open');

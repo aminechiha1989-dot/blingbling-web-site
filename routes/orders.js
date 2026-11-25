@@ -4,6 +4,9 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Frais de livraison par commande (8 DT), modifiable via la variable Render SHIPPING_MILLIMES
+const SHIPPING = Number(process.env.SHIPPING_MILLIMES || 8000);
+
 // POST /api/orders — créer une commande depuis le site
 // ---------- Notification WhatsApp (CallMeBot) ----------
 // Variables Render : WHATSAPP_NOTIFY_PHONE (ex. 21650202054) et CALLMEBOT_APIKEY
@@ -16,6 +19,7 @@ async function notifyWhatsApp(order, items) {
   const text = [
     `🛍️ Nouvelle commande #${order.id}`,
     ...lines,
+    `Livraison : ${dt(SHIPPING)}`,
     `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
     ``,
     `👤 ${order.customer_name}`,
@@ -39,6 +43,7 @@ async function notifyNtfy(order, items) {
   const dt = (m) => (Number(m) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' DT';
   const body = [
     ...items.map(i => `• ${i.product_name} x${i.quantity} : ${dt(i.unit_price_millimes * i.quantity)}`),
+    `Livraison : ${dt(SHIPPING)}`,
     `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
     ``,
     `Nom : ${order.customer_name}`,
@@ -75,6 +80,7 @@ async function notifyGreenApi(order, items) {
   const message = [
     `*Nouvelle commande #${order.id}*`,
     ...items.map(i => `- ${i.product_name} x${i.quantity} : ${dt(i.unit_price_millimes * i.quantity)}`),
+    `Livraison : ${dt(SHIPPING)}`,
     `Total : ${dt(order.total_millimes)} (paiement à la livraison)`,
     ``,
     `Nom : ${order.customer_name}`,
@@ -125,6 +131,8 @@ router.post('/', async (req, res) => {
       total += product.price_millimes * quantity;
       resolvedItems.push({ product, quantity });
     }
+
+    total += SHIPPING; // frais de livraison, une fois par commande
 
     const orderResult = await tx.execute({
       sql: `INSERT INTO orders (customer_name, phone, city, address, payment_method, total_millimes)
