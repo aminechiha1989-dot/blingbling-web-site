@@ -1232,13 +1232,18 @@
     const hero = document.getElementById('hero-visual');
     if(!hero || (typeof EDIT_MODE !== 'undefined' && EDIT_MODE)) return;
     const slides = [];
+    // 1) les nouveautés d'abord (4 dernières pièces disponibles)
+    const newest = products.filter(p => p.image_url && p.stock > 0)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id).slice(0, 4);
+    newest.forEach(p => slides.push({ img: lightSrc(p.image_url).replace('w_700','w_1200'), cat: '', label: 'Nouveauté', pid: p.id }));
+    // 2) puis la photo d'accueil et une photo par catégorie
     const base = bgUrl(hero); if(base) slides.push({ img: base, cat: '' });
     CAT_ORDER.forEach(cat => {
       const withImg = products.filter(p => parseCat(p.category).main === cat && p.image_url && p.stock > 0)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       let img = withImg[0] && withImg[0].image_url;
       if(!img){ const tile = document.querySelector(`.cat-card[data-category="${cat}"] .cat-bg`); img = bgUrl(tile); }
-      if(img) slides.push({ img, cat });
+      if(img && !slides.some(x => x.img.split('/').pop() === img.split('/').pop())) slides.push({ img, cat });
     });
     hero.querySelectorAll('.hero-slide, .hero-cap, .hero-dots').forEach(e => e.remove());
     if(slides.length < 2) return;
@@ -1251,10 +1256,10 @@
       heroIdx = (i + slides.length) % slides.length;
       hero.querySelectorAll('.hero-slide').forEach((d, j) => d.classList.toggle('on', j === heroIdx));
       dots.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === heroIdx));
-      const cat = slides[heroIdx].cat;
-      cap.style.display = cat ? 'inline-block' : 'none';
-      cap.textContent = cat ? `${cat} →` : '';
-      cap.onclick = () => cat && setFilter(cat);
+      const { cat, label, pid } = slides[heroIdx];
+      cap.style.display = (cat || label) ? 'inline-block' : 'none';
+      cap.textContent = label ? `✨ ${label} →` : (cat ? `${cat} →` : '');
+      cap.onclick = () => pid ? openQuickView(pid) : (cat && setFilter(cat));
     };
     dots.querySelectorAll('button').forEach((b, j) => b.addEventListener('click', () => { show(j); restart(); }));
     const restart = () => { clearInterval(heroTimer); heroTimer = setInterval(() => show(heroIdx + 1), 4000); };
