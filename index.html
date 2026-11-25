@@ -699,7 +699,7 @@
   main, section, .section{background:transparent !important;}
   /* ---------- articles sans cadre blanc : le fond blanc des photos se fond dans la page ---------- */
   .product-img{background:transparent !important; border:none !important; box-shadow:none !important;}
-  .product-img img{mix-blend-mode:multiply;}
+  .product-img img.cutout{object-fit:contain; padding:6px; filter:drop-shadow(0 8px 14px rgba(30,20,60,.18));}
 </style>
 </head>
 <body>
@@ -1068,7 +1068,7 @@
       <div class="product ${p.stock <= 0 ? 'sold' : ''}" data-id="${p.id}">
         <div class="product-img">
           ${p.stock <= 0 ? '<span class="sold-sticker">Vendu</span>' : ''}
-          ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" loading="lazy">` : ''}
+          ${p.image_url ? `<img src="${imgSrc(p)}" alt="${p.name}" loading="lazy"${CUTOUTS.has(p.id) ? ' class="cutout"' : ''}>` : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
         </div>
@@ -1201,6 +1201,10 @@
   // ---------- étape « vérifie la taille » avant l'ajout au panier ----------
   const WHATSAPP_NUMBER = '21650202054';
   let scId = null;
+  // Photos détourées (fond transparent) hébergées sur le site
+  const CUTOUTS = new Set([14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]);
+  const imgSrc = p => CUTOUTS.has(p.id) ? `cutouts/${p.id}.webp` : p.image_url;
+
   // ---------- Tailles : guide indicatif ----------
   const SIZE_GUIDE = {
     'XS':{fr:'34', h:'1,50–1,58 m', w:'40–48 kg'},
