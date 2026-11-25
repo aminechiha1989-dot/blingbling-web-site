@@ -689,6 +689,14 @@
   .wa-step{font-weight:600; margin-top:14px;}
   .wa-btn{background:#1DA851 !important; border-color:#1DA851 !important; margin-top:8px; justify-content:center; width:100%; min-height:50px; font-size:15px !important;}
   .wa-note{font-size:12px; color:#6B6B6B; margin-top:10px;}
+  /* ---------- fond photo (portant noir et blanc, Unsplash) ---------- */
+  body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:linear-gradient(rgba(250,248,255,.78),rgba(250,248,255,.86)),
+      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=80&w=3840&fit=crop') center/cover no-repeat;}
+  @media (max-width:700px){ body::before{background:linear-gradient(rgba(250,248,255,.80),rgba(250,248,255,.88)),
+      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=75&w=1400&fit=crop') center/cover no-repeat;} }
+  body{background:transparent !important;}
+  main, section, .section{background:transparent !important;}
 </style>
 </head>
 <body>
