@@ -752,6 +752,27 @@
   #qv-price .promo-stamp .ps-price{font-size:30px;}
   #qv-price .old-price{font-size:18px;}
   .sc-price .promo-stamp .ps-price{font-size:20px;}
+  /* ---------- cartes article sur téléphone : affichage aligné ---------- */
+  @media (max-width:700px){
+    .product{gap:0;}
+    .product .product-img{aspect-ratio:3/4 !important; height:auto !important;}
+    .product .p-meta{min-height:50px;}
+    .product .p-row{display:flex !important; flex-direction:column !important; align-items:flex-start !important; gap:4px; margin-top:8px;}
+    .product .p-row h3{font-size:13.5px !important; line-height:1.25; margin:0; min-height:2.5em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-transform:capitalize;}
+    .product .price{display:flex !important; align-items:center !important; justify-content:flex-start !important; flex-wrap:nowrap; min-height:30px; font-size:15px; font-weight:700;}
+    .product .price .promo-stamp{transform:rotate(-4deg); padding:1px 6px 2px; margin:0 6px 0 0;}
+    .product .price .promo-stamp .ps-label{font-size:7px;}
+    .product .price .promo-stamp .ps-price{font-size:13px;}
+    .product .price .old-price{font-size:11.5px;}
+    .product .sub{font-size:11.5px; line-height:1.3; margin:4px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-height:1.3em; opacity:.75;}
+    .product .cond-badge{font-size:10px; padding:2px 7px; margin-top:6px;}
+    .product .size-pills{margin:6px 0 0; gap:4px; min-height:20px; flex-wrap:nowrap; overflow:hidden;}
+    .product .size-pills span{font-size:10px; padding:2px 6px;}
+    .product .add-btn{margin-top:10px; font-size:12.5px; padding:9px 6px;}
+  }
+  .cond-badge.cond-empty{visibility:hidden;}
+  .size-pills:empty{display:none;}
+  @media (max-width:700px){ .size-pills:empty{display:flex; visibility:hidden;} }
 </style>
 </head>
 <body>
@@ -1136,8 +1157,10 @@
         </div>
         <div class="p-row"><h3>${p.name}</h3><span class="price">${priceHTML(p)}</span></div>
         <div class="sub">${pc.sub ? pc.sub + (p.description ? ' · ' : '') : ''}${p.description || ''}</div>
-        ${p.condition ? `<div class="cond-badge cond-${p.condition.normalize('NFD').replace(/[^a-zA-Z]/g,'').toLowerCase()}">${p.condition}</div>` : ''}
-        ${sizeList(p).length ? `<div class="size-pills">${sizeList(p).map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+        <div class="p-meta">
+          ${p.condition ? `<div class="cond-badge cond-${p.condition.normalize('NFD').replace(/[^a-zA-Z]/g,'').toLowerCase()}">${p.condition}</div>` : '<div class="cond-badge cond-empty"></div>'}
+          <div class="size-pills">${sizeList(p).map(x => `<span>${x}</span>`).join('')}</div>
+        </div>
         <button class="add-btn" data-id="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>
           ${p.stock <= 0 ? 'Vendu' : 'Ajouter au panier'}
         </button>
