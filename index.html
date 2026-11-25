@@ -741,6 +741,17 @@
   .navlinks a.nav-promo{color:#E11D2E !important; font-weight:700;}
   .chip.chip-promo{color:#E11D2E; border-color:#F5B5BB;}
   .chip.chip-promo.on{background:#E11D2E !important; color:#fff !important; border-color:#E11D2E !important;}
+  /* ---------- prix promo : tampon ---------- */
+  .promo-stamp{display:inline-flex; flex-direction:column; align-items:center; line-height:1.05; transform:rotate(-6deg); border:3px double #E11D2E; color:#E11D2E; border-radius:8px; padding:2px 9px 3px; margin:2px 8px 2px 0; background:rgba(255,255,255,.85);}
+  .promo-stamp .ps-label{font-size:9px; letter-spacing:.18em; font-weight:700;}
+  .promo-stamp .ps-price{font-size:17px; font-weight:800; white-space:nowrap;}
+  .product .price:has(.promo-stamp){align-items:center;}
+  .product .price .old-price{text-decoration-color:#E11D2E; text-decoration-thickness:2px;}
+  #qv-price .promo-stamp{padding:4px 14px 5px; border-width:4px;}
+  #qv-price .promo-stamp .ps-label{font-size:11px;}
+  #qv-price .promo-stamp .ps-price{font-size:30px;}
+  #qv-price .old-price{font-size:18px;}
+  .sc-price .promo-stamp .ps-price{font-size:20px;}
 </style>
 </head>
 <body>
@@ -1265,8 +1276,11 @@
   // ---------- promo ----------
   const discountOf = p => Math.max(0, Math.min(90, Number(p.discount_percent) || 0));
   const effPrice = p => Math.round(p.price_millimes * (100 - discountOf(p)) / 100);
-  const priceHTML = p => discountOf(p) > 0
-    ? `<span class="old-price">${formatPrice(p.price_millimes)}</span><span class="promo-price">${formatPrice(effPrice(p))}</span>`
+  // style « tampon promo » ; compact = version simple (panier)
+  const priceHTML = (p, compact) => discountOf(p) > 0
+    ? (compact
+        ? `<span class="old-price">${formatPrice(p.price_millimes)}</span><span class="promo-price">${formatPrice(effPrice(p))}</span>`
+        : `<span class="promo-stamp"><span class="ps-label">PROMO</span><span class="ps-price">${formatPrice(effPrice(p))}</span></span><span class="old-price">${formatPrice(p.price_millimes)}</span>`)
     : formatPrice(p.price_millimes);
 
   // ---------- Tailles : guide indicatif ----------
@@ -1452,7 +1466,7 @@
           ${product.image_url ? `<img class="swatch" src="${product.image_url}" alt="${product.name}" loading="lazy">` : `<div class="swatch"></div>`}
           <div class="info">
             <h4>${product.name}</h4>
-            <span>${priceHTML(product)}</span>
+            <span>${priceHTML(product, true)}</span>
           </div>
           <div class="qty-controls">
             <button data-id="${id}" data-delta="-1">−</button>
