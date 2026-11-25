@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Garder le serveur Render réveillé
+        run: curl -s -o /dev/null -m 90 https://blingbling-b7cg.onrender.com/api/products || true
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:

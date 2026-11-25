@@ -693,9 +693,9 @@
   /* ---------- fond photo (portant noir et blanc, Unsplash) ---------- */
   body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
     background:linear-gradient(rgba(250,248,255,.78),rgba(250,248,255,.86)),
-      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=80&w=3840&fit=crop') center/cover no-repeat;}
+      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=70&w=1920&fit=crop') center/cover no-repeat;}
   @media (max-width:700px){ body::before{background:linear-gradient(rgba(250,248,255,.80),rgba(250,248,255,.88)),
-      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=75&w=1400&fit=crop') center/cover no-repeat;} }
+      url('https://images.unsplash.com/photo-1756027843099-9aa45b538762?fm=jpg&q=65&w=900&fit=crop') center/cover no-repeat;} }
   body{background:transparent !important;}
   main, section, .section{background:transparent !important;}
   /* ---------- articles sans cadre blanc : le fond blanc des photos se fond dans la page ---------- */
@@ -1130,7 +1130,7 @@
         <div class="product-img">
           ${p.stock <= 0 ? '<span class="sold-sticker">Vendu</span>' : ''}
           ${discountOf(p) > 0 && p.stock > 0 ? `<span class="promo-sticker">-${discountOf(p)}%</span>` : ''}
-          ${p.image_url ? (cutSrc(p) ? `<img src="${lightSrc(p.image_url)}" alt="" aria-hidden="true" decoding="async" class="orig-photo" onload="this.parentNode.classList.add('orig-ready')"><img src="${cutSrc(p)}" alt="${p.name}" loading="lazy" class="cutout">` : `<img src="${p.image_url}" alt="${p.name}" loading="lazy">`) : ''}
+          ${p.image_url ? (cutSrc(p) ? `<img src="${lightSrc(p.image_url)}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="orig-photo" onload="this.parentNode.classList.add('orig-ready')"><img src="${cutSrc(p)}" alt="${p.name}" loading="lazy" class="cutout">` : `<img src="${lightSrc(p.image_url)}" alt="${p.name}" loading="lazy" decoding="async">`) : ''}
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
         </div>
@@ -1225,7 +1225,7 @@
       const cat = card.dataset.category;
       const p = products.filter(x => parseCat(x.category).main === cat && x.image_url && x.stock > 0)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-      if(p) bg.style.backgroundImage = `url('${p.image_url}')`;
+      if(p) bg.style.backgroundImage = `url('${lightSrc(p.image_url)}')`;
     });
   }
   // ---------- diaporama d'accueil : passe par toutes les catégories ----------
@@ -1244,7 +1244,7 @@
     CAT_ORDER.forEach(cat => {
       const withImg = products.filter(p => parseCat(p.category).main === cat && p.image_url && p.stock > 0)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      let img = withImg[0] && withImg[0].image_url;
+      let img = withImg[0] && lightSrc(withImg[0].image_url).replace('w_700','w_1200');
       if(!img){ const tile = document.querySelector(`.cat-card[data-category="${cat}"] .cat-bg`); img = bgUrl(tile); }
       if(img && !slides.some(x => x.img.split('/').pop() === img.split('/').pop())) slides.push({ img, cat });
     });
@@ -1426,7 +1426,7 @@
   function openQuickView(id){
     const p = products.find(p => p.id === id);
     if(!p) return;
-    document.getElementById('qv-img').src = p.image_url || '';
+    document.getElementById('qv-img').src = p.image_url ? lightSrc(p.image_url).replace('w_700','w_1600') : '';
     document.getElementById('qv-img').style.display = p.image_url ? 'block' : 'none';
     document.getElementById('qv-img').alt = p.name;
     document.getElementById('zoom-btn').style.display = p.image_url ? 'flex' : 'none';
