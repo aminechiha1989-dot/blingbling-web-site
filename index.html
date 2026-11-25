@@ -408,6 +408,7 @@
   .cart-line{
     display:flex; gap:12px; align-items:center; padding:14px 0; border-bottom:1px solid var(--line);
   }
+  .cart-line img.swatch{object-fit:cover; background:#f3eff8; border-radius:8px;}
   .cart-line .swatch{width:52px; height:52px; border-radius:2px; flex-shrink:0;
     background:linear-gradient(160deg,#EFE6D6,#C9A96B);}
   .cart-line .info{flex:1;}
@@ -1334,7 +1335,7 @@
       total += lineTotal;
       return `
         <div class="cart-line">
-          <div class="swatch"></div>
+          ${product.image_url ? `<img class="swatch" src="${product.image_url}" alt="${product.name}" loading="lazy">` : `<div class="swatch"></div>`}
           <div class="info">
             <h4>${product.name}</h4>
             <span>${formatPrice(product.price_millimes)}</span>
