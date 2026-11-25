@@ -738,6 +738,9 @@
   #qv-price .promo-price{color:#E11D2E !important;}
   .promo-tag{display:inline-block; vertical-align:middle; font-size:13px; font-weight:800; color:#fff; background:#E11D2E; padding:3px 8px; border-radius:999px; margin-left:6px;}
   .product .price{display:inline-flex; align-items:baseline; flex-wrap:wrap; justify-content:flex-end;}
+  .navlinks a.nav-promo{color:#E11D2E !important; font-weight:700;}
+  .chip.chip-promo{color:#E11D2E; border-color:#F5B5BB;}
+  .chip.chip-promo.on{background:#E11D2E !important; color:#fff !important; border-color:#E11D2E !important;}
 </style>
 </head>
 <body>
@@ -750,6 +753,7 @@
       <a href="#nouveautes" data-filter="Fripe">Fripe</a>
       <a href="#nouveautes" data-filter="Prêt-à-porter">Prêt-à-porter</a>
       <a href="#nouveautes" data-filter="Accessoires">Accessoires</a>
+      <a href="#nouveautes" data-filter="Promo" class="nav-promo">Promo</a>
     </div>
     <div class="navicons">
       <div class="social-icons">
@@ -827,6 +831,7 @@
     <button type="button" class="chip" data-filter="Fripe">Fripe</button>
     <button type="button" class="chip" data-filter="Prêt-à-porter">Prêt-à-porter</button>
     <button type="button" class="chip" data-filter="Accessoires">Accessoires</button>
+    <button type="button" class="chip chip-promo" data-filter="Promo">Promo</button>
   </div>
   <div class="subbar" id="subbar"></div>
   <div id="products-grid">
@@ -1159,6 +1164,11 @@
       titleEl.innerHTML = `Résultats pour « ${searchTerm} » <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''}.`;
       html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucun résultat.</p>';
+    } else if(activeCategory === 'Promo'){
+      const list = soldLast(products.filter(p => discountOf(p) > 0)).sort((a, b) => (a.stock <= 0) - (b.stock <= 0) || discountOf(b) - discountOf(a));
+      titleEl.innerHTML = `Promo <button type="button" class="back-home" id="back-home">← Accueil</button>`;
+      subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''} en promo.`;
+      html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucune promo pour l’instant. Reviens bientôt !</p>';
     } else if(activeCategory){
       const inCat = products.filter(p => parseCat(p.category).main === activeCategory);
       titleEl.innerHTML = `${activeSub ? activeCategory + ' · ' + activeSub : activeCategory} <button type="button" class="back-home" id="back-home">← Accueil</button>`;
