@@ -1036,6 +1036,7 @@
   document.addEventListener('visibilitychange', () => { if(!document.hidden) syncStock(); });
 
   async function loadProducts(){
+    try{ const ci = await fetch('cutouts/index.json', {cache:'no-store'}); if(ci.ok) CUTOUTS = new Map(Object.entries(await ci.json())); }catch(e){}
     try{
       const res = await fetch(`${API_BASE}/api/products?include_sold=1`);
       products = await res.json();
@@ -1220,8 +1221,9 @@
   const WHATSAPP_NUMBER = '21650202054';
   let scId = null;
   // Photos détourées (fond transparent) hébergées sur le site
-  const CUTOUTS = new Set([14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]);
-  const cutSrc = p => p.cutout_url || (CUTOUTS.has(p.id) ? `cutouts/${p.id}.webp?v=3` : '');
+  // liste mise à jour automatiquement par GitHub (cutouts/index.json)
+  let CUTOUTS = new Map();
+  const cutSrc = p => p.cutout_url || (CUTOUTS.has(String(p.id)) ? `cutouts/${p.id}.webp?v=${CUTOUTS.get(String(p.id))}` : '');
   const imgSrc = p => cutSrc(p) || p.image_url;
   // version légère de la photo d'origine (Cloudinary redimensionne à la volée)
   const lightSrc = u => (u || '').includes('res.cloudinary.com') && u.includes('/upload/') ? u.replace('/upload/', '/upload/w_700,c_limit,f_auto,q_auto/') : u;

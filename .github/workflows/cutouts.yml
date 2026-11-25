@@ -1,0 +1,35 @@
+name: Détourage automatique des photos
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cutouts
+  cancel-in-progress: false
+jobs:
+  cutouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.u2net
+            ~/.rembg
+          key: rembg-isnet-general-use
+      - run: pip install "rembg[cpu]" scipy pillow numpy
+      - run: python scripts/cutouts.py
+      - name: Publier les nouvelles photos détourées
+        run: |
+          git config user.name "blingbling-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add cutouts
+          if git diff --cached --quiet; then echo "rien de nouveau"; exit 0; fi
+          git commit -m "Détourage automatique des nouvelles photos [skip render]"
+          git push
