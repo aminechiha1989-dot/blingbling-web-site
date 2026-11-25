@@ -197,4 +197,27 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   res.json(updated.rows[0]);
 });
 
+// DELETE /api/orders/:id?restock=1 — supprimer une commande (admin)
+// restock=1 : remet les articles de la commande en stock
+router.delete('/:id', requireAdmin, async (req, res) => {
+  const tx = await client.transaction('write');
+  try {
+    const order = await tx.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [req.params.id] });
+    if (order.rows.length === 0) { await tx.rollback(); return res.status(404).json({ error: 'Commande introuvable' }); }
+    if (req.query.restock === '1') {
+      const items = await tx.execute({ sql: 'SELECT product_id, quantity FROM order_items WHERE order_id = ?', args: [req.params.id] });
+      for (const it of items.rows) {
+        if (it.product_id) await tx.execute({ sql: 'UPDATE products SET stock = stock + ? WHERE id = ?', args: [it.quantity, it.product_id] });
+      }
+    }
+    await tx.execute({ sql: 'DELETE FROM order_items WHERE order_id = ?', args: [req.params.id] });
+    await tx.execute({ sql: 'DELETE FROM orders WHERE id = ?', args: [req.params.id] });
+    await tx.commit();
+    res.json({ deleted: Number(req.params.id), restocked: req.query.restock === '1' });
+  } catch (err) {
+    await tx.rollback();
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

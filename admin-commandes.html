@@ -115,6 +115,10 @@
   .logo{font-family:'Playfair Display', serif !important; font-style:italic; font-weight:700 !important; font-size:26px !important; line-height:1;}
   .logo .li{position:relative; display:inline-block;}
   .logo .li svg{position:absolute; left:62%; top:-.02em; width:.26em; height:.26em; transform:translateX(-50%); fill:#B08D57; display:block;}
+  .del-btn{background:none; border:1px solid #F1C9C9; color:#B42318; border-radius:8px; width:34px; height:34px; cursor:pointer; font-size:15px;}
+  .del-btn:hover{background:#FDECEC;}
+  .del-order{margin-top:14px; width:100%; padding:12px; border-radius:10px; border:1px solid #B42318; background:#fff; color:#B42318; font:inherit; font-weight:600; cursor:pointer;}
+  .del-order:hover{background:#B42318; color:#fff;}
 </style>
 </head>
 <body>
@@ -154,7 +158,7 @@
 
     <table class="orders-table" id="orders-table">
       <thead>
-        <tr><th>Client</th><th>Ville</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Date</th></tr>
+        <tr><th>Client</th><th>Ville</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Date</th><th></th></tr>
       </thead>
       <tbody id="orders-tbody"></tbody>
     </table>
@@ -192,6 +196,7 @@
       <option value="livree">Livrée</option>
       <option value="annulee">Annulée</option>
     </select>
+    <button type="button" class="del-order" id="oc-delete">Supprimer cette commande</button>
   </div>
 </div>
 
@@ -298,12 +303,14 @@
         <td>${paymentLabels[o.payment_method] || o.payment_method}</td>
         <td><span class="status-pill ${o.status}">${statusLabels[o.status] || o.status}</span></td>
         <td>${formatDate(o.created_at)}</td>
+        <td><button type="button" class="del-btn" data-del="${o.id}" title="Supprimer la commande" aria-label="Supprimer la commande #${o.id}">🗑</button></td>
       </tr>
     `).join('');
 
     tbody.querySelectorAll('tr').forEach(tr => {
       tr.addEventListener('click', () => openOrder(Number(tr.dataset.id)));
     });
+    tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); deleteOrder(Number(b.dataset.del)); }));
   }
 
   async function openOrder(id){
@@ -353,6 +360,23 @@
       alert("Impossible de mettre à jour le statut.");
     }
   });
+
+  async function deleteOrder(id){
+    const o = orders.find(x => x.id === id);
+    const who = o ? ` de ${o.customer_name}` : '';
+    if(!confirm(`Supprimer définitivement la commande #${id}${who} ?\nCette action est irréversible.`)) return;
+    const restock = confirm("Remettre les articles de cette commande en stock ?\n\nOK = oui (commande annulée, articles disponibles)\nAnnuler = non (articles déjà livrés)");
+    try{
+      const res = await fetch(`${API_BASE}/api/orders/${id}${restock ? '?restock=1' : ''}`, { method: 'DELETE', headers: adminHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || res.status);
+      document.getElementById('order-overlay').classList.remove('open');
+      loadOrders();
+    }catch(err){
+      alert("Impossible de supprimer la commande : " + err.message);
+    }
+  }
+  document.getElementById('oc-delete').addEventListener('click', () => { if(openOrderId) deleteOrder(openOrderId); });
 
   if(adminKey){ tryLogin(adminKey); }
 </script>
