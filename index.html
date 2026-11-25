@@ -1068,10 +1068,13 @@
       if(!res.ok) return;
       const fresh = await res.json();
       const sig = x => JSON.stringify(x.map(p => [p.id, p.stock]));
-      if(sig(fresh) !== sig(products)){ products = fresh; renderProducts(); }
+      if(sig(fresh) !== sig(products) || JSON.stringify(fresh.map(p=>[p.image_url,p.discount_percent,p.cutout_url])) !== JSON.stringify(products.map(p=>[p.image_url,p.discount_percent,p.cutout_url]))){
+        products = fresh; renderProducts(); applyCategoryCovers(); buildHeroSlides(); try{ buildTicker(); }catch(e){}
+        try{ const ci = await fetch('cutouts/index.json', {cache:'no-store'}); if(ci.ok){ CUTOUTS = new Map(Object.entries(await ci.json())); renderProducts(); } }catch(e){}
+      }
     }catch(e){}
   }
-  setInterval(syncStock, 30000);
+  setInterval(syncStock, 20000);
   document.addEventListener('visibilitychange', () => { if(!document.hidden) syncStock(); });
 
   async function loadProducts(){
@@ -1220,8 +1223,8 @@
       const id = bg.id && bg.id.replace('-bg','');
       if(id && customCover[id]) return;
       const cat = card.dataset.category;
-      const p = products.filter(x => parseCat(x.category).main === cat && x.image_url)
-        .sort((a, b) => (a.stock <= 0) - (b.stock <= 0) || new Date(b.created_at) - new Date(a.created_at))[0];
+      const p = products.filter(x => parseCat(x.category).main === cat && x.image_url && x.stock > 0)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
       if(p) bg.style.backgroundImage = `url('${p.image_url}')`;
     });
   }
@@ -1245,6 +1248,13 @@
       if(!img){ const tile = document.querySelector(`.cat-card[data-category="${cat}"] .cat-bg`); img = bgUrl(tile); }
       if(img && !slides.some(x => x.img.split('/').pop() === img.split('/').pop())) slides.push({ img, cat });
     });
+    // jamais d'article vendu dans le diaporama
+    const fileOf = u => (u || '').split('?')[0].split('/').pop();
+    const sold = new Set(products.filter(p => p.stock <= 0 && p.image_url).map(p => fileOf(p.image_url)));
+    for(let k = slides.length - 1; k >= 0; k--) if(sold.has(fileOf(slides[k].img))) slides.splice(k, 1);
+    const sig = slides.map(x => x.img).join('|');
+    if(hero.dataset.sig === sig && hero.querySelector('.hero-slide')) return; // rien n'a changé
+    hero.dataset.sig = sig; clearInterval(heroTimer);
     hero.querySelectorAll('.hero-slide, .hero-cap, .hero-dots').forEach(e => e.remove());
     if(slides.length < 2) return;
     slides.forEach((sl, i) => { const d = document.createElement('div'); d.className = 'hero-slide'; d.style.backgroundImage = `url('${sl.img}')`; hero.appendChild(d); });
