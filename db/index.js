@@ -58,6 +58,7 @@ async function initDb() {
   await client.execute(`
     INSERT OR IGNORE INTO site_status (id, is_live) VALUES (1, 0)
   `);
+  try { await client.execute(`ALTER TABLE products ADD COLUMN sizes TEXT`); } catch (err) { /* déjà là */ }
 // Ajoute la colonne hero_image_url si elle n'existe pas encore
   // (ALTER TABLE échoue silencieusement si la colonne est déjà là — normal).
   try {

@@ -158,6 +158,11 @@
   #p-image-upload-status{font-size:13px; margin-top:8px; min-height:18px;}
   #p-image-upload-status.success{color:#1B6B34;} #p-image-upload-status.error{color:#A12A2A;}
   .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip.size{min-height:52px; padding:6px 12px; font-size:13px; line-height:1.2; text-align:center;}
+  .chip.size small{display:block; font-size:10.5px; opacity:.65; font-weight:400;}
+  .chip.size.on{background:#6B4EE6; border-color:#6B4EE6; color:#fff;}
+  .chip.size.on small{opacity:.85;}
+
   .chip{font:inherit; font-size:14px; padding:10px 16px; min-height:44px; border-radius:999px; border:1px solid #CFC6B8; background:#fff; cursor:pointer;}
   .chip.on{background:#2B2B2B; color:#fff; border-color:#2B2B2B;}
   .chip.sub{min-height:38px; padding:7px 14px; font-size:13px;}
@@ -263,6 +268,11 @@
                 <button type="button" class="chip" data-cat="Accessoires">Accessoires</button>
               </div>
               <div class="chips" id="sub-chips" style="margin-top:8px;"></div>
+            </div>
+            <div class="field">
+              <label>5. Tailles disponibles <span style="font-weight:400;opacity:.6">(facultatif)</span></label>
+              <div class="chips" id="size-chips"></div>
+              <div id="size-hint" style="font-size:12px;opacity:.7;margin-top:6px;">Touche une ou plusieurs tailles. La correspondance taille/poids s'affichera sur le site.</div>
             </div>
             <details class="more">
               <summary>Plus d'options (facultatif)</summary>
@@ -622,6 +632,30 @@
     }catch(err){ alert("Impossible de mettre à jour le badge live."); }
   }
 
+  // ---------- Tailles (guide indicatif taille du corps / poids) ----------
+  const SIZE_GUIDE = [
+    {s:'XS',  fr:'34', h:'1,50–1,58 m', w:'40–48 kg'},
+    {s:'S',   fr:'36', h:'1,55–1,63 m', w:'48–56 kg'},
+    {s:'M',   fr:'38', h:'1,60–1,68 m', w:'55–64 kg'},
+    {s:'L',   fr:'40', h:'1,63–1,72 m', w:'63–72 kg'},
+    {s:'XL',  fr:'42', h:'1,65–1,75 m', w:'71–80 kg'},
+    {s:'XXL', fr:'44', h:'1,68–1,78 m', w:'79–90 kg'},
+    {s:'Taille unique', fr:'', h:'', w:''},
+  ];
+  let curSizes = [];
+  function renderSizeChips(){
+    const wrap = document.getElementById('size-chips');
+    wrap.innerHTML = SIZE_GUIDE.map(g => `<button type="button" class="chip size ${curSizes.includes(g.s)?'on':''}" data-size="${g.s}">${g.s}${g.h?`<small>${g.h} · ${g.w}</small>`:''}</button>`).join('');
+    wrap.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => {
+      const v = b.dataset.size;
+      curSizes = curSizes.includes(v) ? curSizes.filter(x => x !== v) : [...curSizes, v];
+      curSizes.sort((a,b) => SIZE_GUIDE.findIndex(g=>g.s===a) - SIZE_GUIDE.findIndex(g=>g.s===b));
+      renderSizeChips();
+    }));
+  }
+  function setSizes(str){ curSizes = (str || '').split(',').map(x => x.trim()).filter(Boolean); renderSizeChips(); }
+  setSizes('');
+
   function editProduct(id){
     const p = products.find(p => p.id === id);
     if(!p) return;
@@ -634,6 +668,7 @@
     document.getElementById('p-price').value = (p.price_millimes / 1000);
     document.getElementById('p-stock').value = p.stock;
     setCategory(p.category || '');
+    setSizes(p.sizes || '');
     document.getElementById('p-live').checked = !!p.is_live;
     document.getElementById('form-title').textContent = 'Modifier le produit';
     document.getElementById('submit-btn').textContent = 'Enregistrer les modifications';
@@ -642,6 +677,7 @@
   }
 
   function resetForm(){
+    setSizes('');
     editingId = null;
     document.getElementById('product-form').reset();
     document.getElementById('p-id').value = '';
@@ -745,6 +781,7 @@
       stock: parseInt(document.getElementById('p-stock').value, 10) || 1,
       category: document.getElementById('p-category').value.trim(),
       is_live: document.getElementById('p-live').checked ? 1 : 0,
+      sizes: curSizes.join(','),
     };
 
     try{
