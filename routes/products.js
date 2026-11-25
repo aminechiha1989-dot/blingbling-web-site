@@ -38,16 +38,16 @@ router.get('/:id', async (req, res) => {
 // --- Routes admin (protégées) ---
 
 router.post('/', requireAdmin, async (req, res) => {
-  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '' } = req.body;
+  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '', condition = '' } = req.body;
 
   if (!name || !price_millimes) {
     return res.status(400).json({ error: 'name et price_millimes sont requis' });
   }
 
   const result = await client.execute({
-    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes],
+    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes, condition)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes, condition],
   });
 
   const created = await client.execute({
@@ -64,7 +64,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   });
   if (existing.rows.length === 0) return res.status(404).json({ error: 'Produit introuvable' });
 
-  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes'];
+  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes', 'condition'];
   const sets = [];
   const args = [];
 

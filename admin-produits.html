@@ -274,6 +274,10 @@
               <div class="chips" id="size-chips"></div>
               <div id="size-hint" style="font-size:12px;opacity:.7;margin-top:6px;">Touche une ou plusieurs tailles. La correspondance taille/poids s'affichera sur le site.</div>
             </div>
+            <div class="field">
+              <label>6. État de l'article</label>
+              <div class="chips" id="cond-chips"></div>
+            </div>
             <details class="more">
               <summary>Plus d'options (facultatif)</summary>
               <div class="field" style="margin-top:12px;">
@@ -656,6 +660,16 @@
   function setSizes(str){ curSizes = (str || '').split(',').map(x => x.trim()).filter(Boolean); renderSizeChips(); }
   setSizes('');
 
+  const CONDITIONS = ['Neuf avec étiquette', 'Neuf', 'Comme neuf', 'Utilisé'];
+  let curCond = '';
+  function setCondition(v){
+    curCond = v || '';
+    const wrap = document.getElementById('cond-chips');
+    wrap.innerHTML = CONDITIONS.map(c => `<button type="button" class="chip sub ${c===curCond?'on':''}" data-cond="${c}">${c}</button>`).join('');
+    wrap.querySelectorAll('[data-cond]').forEach(b => b.addEventListener('click', () => setCondition(b.dataset.cond === curCond ? '' : b.dataset.cond)));
+  }
+  setCondition('');
+
   function editProduct(id){
     const p = products.find(p => p.id === id);
     if(!p) return;
@@ -669,6 +683,7 @@
     document.getElementById('p-stock').value = p.stock;
     setCategory(p.category || '');
     setSizes(p.sizes || '');
+    setCondition(p.condition || '');
     document.getElementById('p-live').checked = !!p.is_live;
     document.getElementById('form-title').textContent = 'Modifier le produit';
     document.getElementById('submit-btn').textContent = 'Enregistrer les modifications';
@@ -678,6 +693,7 @@
 
   function resetForm(){
     setSizes('');
+    setCondition('');
     editingId = null;
     document.getElementById('product-form').reset();
     document.getElementById('p-id').value = '';
@@ -782,6 +798,7 @@
       category: document.getElementById('p-category').value.trim(),
       is_live: document.getElementById('p-live').checked ? 1 : 0,
       sizes: curSizes.join(','),
+      condition: curCond,
     };
 
     try{

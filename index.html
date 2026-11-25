@@ -408,6 +408,10 @@
   .cart-line{
     display:flex; gap:12px; align-items:center; padding:14px 0; border-bottom:1px solid var(--line);
   }
+  .cond-badge{display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; margin-top:6px; background:#FFF1E0; color:#A35A00;}
+  .cond-badge.cond-neufavecetiquette{background:#E3F7EA; color:#1B7A3D;}
+  .cond-badge.cond-neuf{background:#E6F0FF; color:#1F5FCC;}
+  .cond-badge.cond-commeneuf{background:#EEE9FB; color:#5B3FD6;}
   .size-pills{display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 8px;}
   .size-pills span{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#EEE9FB; color:#5B3FD6;}
   .size-guide{margin:12px 0; border:1px solid #E4DDF7; border-radius:12px; padding:10px 12px; background:#FAF8FF; font-size:13px;}
@@ -952,6 +956,7 @@
         <div class="sc-price" id="sc-price"></div>
         <div class="sc-info"><span>Taille / détails</span><b id="sc-size"></b></div>
         <div class="sc-info"><span>Catégorie</span><b id="sc-cat"></b></div>
+        <div class="sc-info"><span>État</span><b id="sc-cond"></b></div>
         <div id="sc-guide"></div>
       </div>
     </div>
@@ -1058,6 +1063,7 @@
         </div>
         <div class="p-row"><h3>${p.name}</h3><span class="price">${formatPrice(p.price_millimes)}</span></div>
         <div class="sub">${pc.sub ? pc.sub + (p.description ? ' · ' : '') : ''}${p.description || ''}</div>
+        ${p.condition ? `<div class="cond-badge cond-${p.condition.normalize('NFD').replace(/[^a-zA-Z]/g,'').toLowerCase()}">${p.condition}</div>` : ''}
         ${sizeList(p).length ? `<div class="size-pills">${sizeList(p).map(x => `<span>${x}</span>`).join('')}</div>` : ''}
         <button class="add-btn" data-id="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>
           ${p.stock <= 0 ? 'Vendu' : 'Ajouter au panier'}
@@ -1210,6 +1216,7 @@
     document.getElementById('sc-price').textContent = formatPrice(p.price_millimes);
     document.getElementById('sc-size').textContent = sizeList(p).join(' · ') || p.description || 'Non précisée — demande-nous sur WhatsApp';
     document.getElementById('sc-guide').innerHTML = sizeGuideHTML(p);
+    document.getElementById('sc-cond').textContent = p.condition || '—';
     document.getElementById('sc-cat').textContent = [pc.main, pc.sub].filter(Boolean).join(' › ') || '—';
     document.getElementById('sc-ok').checked = false;
     document.getElementById('sc-add').disabled = true;
@@ -1317,7 +1324,7 @@
     document.getElementById('zoom-btn').style.display = p.image_url ? 'flex' : 'none';
     document.getElementById('qv-name').textContent = p.name;
     document.getElementById('qv-price').textContent = formatPrice(p.price_millimes);
-    document.getElementById('qv-sizes').innerHTML = sizeGuideHTML(p);
+    document.getElementById('qv-sizes').innerHTML = (p.condition ? `<div class="cond-badge">État : ${p.condition}</div>` : '') + sizeGuideHTML(p);
     document.getElementById('qv-desc').textContent = p.description || '';
     const qvAdd = document.getElementById('qv-add');
     qvAdd.disabled = p.stock <= 0;
