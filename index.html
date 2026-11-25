@@ -1235,19 +1235,10 @@
     const hero = document.getElementById('hero-visual');
     if(!hero || (typeof EDIT_MODE !== 'undefined' && EDIT_MODE)) return;
     const slides = [];
-    // 1) les nouveautés d'abord (4 dernières pièces disponibles)
+    // uniquement les nouveautés : les 6 dernières pièces encore disponibles
     const newest = products.filter(p => p.image_url && p.stock > 0)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id).slice(0, 4);
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id).slice(0, 6);
     newest.forEach(p => slides.push({ img: lightSrc(p.image_url).replace('w_700','w_1200'), cat: '', label: 'Nouveauté', pid: p.id }));
-    // 2) puis la photo d'accueil et une photo par catégorie
-    const base = bgUrl(hero); if(base) slides.push({ img: base, cat: '' });
-    CAT_ORDER.forEach(cat => {
-      const withImg = products.filter(p => parseCat(p.category).main === cat && p.image_url && p.stock > 0)
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      let img = withImg[0] && lightSrc(withImg[0].image_url).replace('w_700','w_1200');
-      if(!img){ const tile = document.querySelector(`.cat-card[data-category="${cat}"] .cat-bg`); img = bgUrl(tile); }
-      if(img && !slides.some(x => x.img.split('/').pop() === img.split('/').pop())) slides.push({ img, cat });
-    });
     // jamais d'article vendu dans le diaporama
     const fileOf = u => (u || '').split('?')[0].split('/').pop();
     const sold = new Set(products.filter(p => p.stock <= 0 && p.image_url).map(p => fileOf(p.image_url)));
