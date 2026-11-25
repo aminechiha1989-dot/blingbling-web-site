@@ -978,6 +978,20 @@
     return (millimes / 1000).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + ' DT';
   }
 
+  // Synchro auto du stock (article vendu -> sticker) toutes les 30 s
+  async function syncStock(){
+    if(document.hidden) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1`, {cache:'no-store'});
+      if(!res.ok) return;
+      const fresh = await res.json();
+      const sig = x => JSON.stringify(x.map(p => [p.id, p.stock]));
+      if(sig(fresh) !== sig(products)){ products = fresh; renderProducts(); }
+    }catch(e){}
+  }
+  setInterval(syncStock, 30000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncStock(); });
+
   async function loadProducts(){
     try{
       const res = await fetch(`${API_BASE}/api/products?include_sold=1`);

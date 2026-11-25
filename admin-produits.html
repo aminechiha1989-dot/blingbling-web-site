@@ -527,9 +527,25 @@
     loginScreen.style.display = 'block';
   });
 
+  // Synchro auto : recharge les produits toutes les 15 s et au retour sur l'onglet
+  async function syncProducts(){
+    if(app.style.display === 'none' || document.hidden) return;
+    const a = document.activeElement;
+    if(a && a.closest && a.closest('#products-tbody') && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1`, {cache:'no-store'});
+      if(!res.ok) return;
+      const fresh = await res.json();
+      if(JSON.stringify(fresh) !== JSON.stringify(products)){ products = fresh; renderTable(); }
+    }catch(e){}
+  }
+  setInterval(syncProducts, 15000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncProducts(); });
+  window.addEventListener('focus', syncProducts);
+
   async function loadProducts(){
     try{
-      const res = await fetch(`${API_BASE}/api/products?include_sold=1`);
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1`, {cache:'no-store'});
       products = await res.json();
       renderTable();
     }catch(err){
