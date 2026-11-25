@@ -241,6 +241,7 @@
       <form id="product-form">
         <input type="hidden" id="p-id">
         <input type="hidden" id="p-image">
+            <input type="hidden" id="p-cutout">
         <input type="hidden" id="p-category">
         <div class="quick-grid">
           <div>
@@ -684,6 +685,7 @@
     setCategory(p.category || '');
     setSizes(p.sizes || '');
     setCondition(p.condition || '');
+    document.getElementById('p-cutout').value = p.cutout_url || '';
     document.getElementById('p-live').checked = !!p.is_live;
     document.getElementById('form-title').textContent = 'Modifier le produit';
     document.getElementById('submit-btn').textContent = 'Enregistrer les modifications';
@@ -693,6 +695,7 @@
 
   function resetForm(){
     setSizes('');
+    document.getElementById('p-cutout').value = '';
     setCondition('');
     editingId = null;
     document.getElementById('product-form').reset();
@@ -732,6 +735,48 @@
     img.src = src || ''; img.style.display = src ? 'block' : 'none';
     document.getElementById('dropzone').classList.toggle('has-img', !!src);
   }
+  // ---------- Détourage automatique (dans le navigateur, gratuit) ----------
+  let cutting = false;
+  async function makeCutout(file){
+    const statusEl = document.getElementById('p-image-upload-status');
+    const submitBtn = document.getElementById('submit-btn');
+    document.getElementById('p-cutout').value = '';
+    cutting = true; submitBtn.disabled = true;
+    statusEl.className = ''; statusEl.textContent = 'Photo prête ✓ — détourage en cours… (la 1re fois peut prendre ~30 s)';
+    try{
+      const { removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1/+esm');
+      const maskBlob = await removeBackground(file, { output: { format: 'image/png' } });
+      const [orig, cut] = await Promise.all([createImageBitmap(file), createImageBitmap(maskBlob)]);
+      let W = orig.width, H = orig.height; const sc = Math.min(1, 1200 / Math.max(W, H)); W = Math.round(W*sc); H = Math.round(H*sc);
+      const c1 = new OffscreenCanvas(W, H), x1 = c1.getContext('2d'); x1.drawImage(orig, 0, 0, W, H);
+      const c2 = new OffscreenCanvas(W, H), x2 = c2.getContext('2d'); x2.drawImage(cut, 0, 0, W, H);
+      const px = x1.getImageData(0, 0, W, H), al = x2.getImageData(0, 0, W, H).data;
+      const solid = new Uint8Array(W*H); for(let i=0;i<W*H;i++) solid[i] = al[i*4+3] > 20 ? 1 : 0;
+      // remplit les trous : tout ce qui n'est pas relié au bord de l'image fait partie du vêtement
+      const outside = new Uint8Array(W*H), stack = [];
+      const push = i => { if(!solid[i] && !outside[i]){ outside[i] = 1; stack.push(i); } };
+      for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=0;y<H;y++){ push(y*W); push(y*W+W-1); }
+      while(stack.length){ const i = stack.pop(), x = i % W; if(x>0) push(i-1); if(x<W-1) push(i+1); if(i>=W) push(i-W); if(i<W*(H-1)) push(i+W); }
+      let minX=W,minY=H,maxX=0,maxY=0;
+      for(let i=0;i<W*H;i++){ const a = outside[i] ? 0 : 255; px.data[i*4+3] = a; if(a){ const x=i%W, y=(i/W)|0; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; } }
+      if(maxX <= minX) throw new Error('rien détecté');
+      x1.putImageData(px, 0, 0);
+      const cw = maxX-minX+1, ch = maxY-minY+1, c3 = new OffscreenCanvas(cw, ch); c3.getContext('2d').drawImage(c1, minX, minY, cw, ch, 0, 0, cw, ch);
+      const blob = await c3.convertToBlob({ type: 'image/png' });
+      const fd = new FormData(); fd.append('file', blob, 'cutout.png'); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if(!res.ok || !data.secure_url) throw new Error(data.error?.message || "envoi");
+      document.getElementById('p-cutout').value = data.secure_url;
+      showPreview(data.secure_url);
+      statusEl.textContent = 'Photo prête ✓ — détourée ✓'; statusEl.className = 'success';
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = 'Photo prête ✓ (détourage impossible, la photo normale sera utilisée)'; statusEl.className = 'success';
+    }
+    cutting = false; submitBtn.disabled = false;
+  }
+
   async function uploadPhoto(file){
     if(!file || !file.type.startsWith('image/')) return;
     const statusEl = document.getElementById('p-image-upload-status');
@@ -748,6 +793,7 @@
       if(!res.ok || !data.secure_url) throw new Error(data.error?.message || "Échec de l'envoi");
       document.getElementById('p-image').value = data.secure_url;
       statusEl.textContent = 'Photo prête ✓'; statusEl.className = 'success';
+      makeCutout(file);
       const nameEl = document.getElementById('p-name');
       if(!nameEl.value) nameEl.focus();
     }catch(err){
@@ -785,7 +831,7 @@
     formMsg.textContent = '';
     formMsg.className = 'form-msg';
 
-    if(uploading){ formMsg.textContent = 'Attends la fin de l\'envoi de la photo…'; return; }
+    if(uploading || cutting){ formMsg.textContent = 'Attends la fin de l\'envoi / du détourage de la photo…'; return; }
     if(!document.getElementById('p-image').value){ formMsg.textContent = 'Ajoute d\'abord une photo.'; formMsg.classList.add('error'); return; }
     if(!curMain || ((CAT_TREE[curMain]||[]).length && !curSub)){ formMsg.textContent = 'Choisis une catégorie et une sous-catégorie.'; formMsg.classList.add('error'); return; }
     lastCategory = document.getElementById('p-category').value;
@@ -799,6 +845,7 @@
       is_live: document.getElementById('p-live').checked ? 1 : 0,
       sizes: curSizes.join(','),
       condition: curCond,
+      cutout_url: document.getElementById('p-cutout').value.trim(),
     };
 
     try{
