@@ -67,8 +67,9 @@ async function notifyNtfy(order, items) {
 async function notifyGreenApi(order, items) {
   const id = process.env.GREENAPI_ID;
   const token = process.env.GREENAPI_TOKEN;
-  const phone = (process.env.GREENAPI_PHONE || '').replace(/\D/g, '');
-  if (!id || !token || !phone) return;
+  // Plusieurs numéros possibles, séparés par des virgules
+  const phones = (process.env.GREENAPI_PHONE || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+  if (!id || !token || !phones.length) return;
   const base = (process.env.GREENAPI_URL || 'https://api.green-api.com').replace(/\/$/, '');
   const dt = (m) => (Number(m) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 3 }) + ' DT';
   const message = [
@@ -80,15 +81,17 @@ async function notifyGreenApi(order, items) {
     `Tél : ${order.phone}`,
     `Adresse : ${order.address}, ${order.city}`,
   ].join('\n');
-  try {
-    const r = await fetch(`${base}/waInstance${id}/sendMessage/${token}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: `${phone}@c.us`, message }),
-    });
-    if (!r.ok) console.error('Notification Green-API échouée :', r.status, await r.text());
-  } catch (err) {
-    console.error('Notification Green-API échouée :', err.message);
+  for (const phone of phones) {
+    try {
+      const r = await fetch(`${base}/waInstance${id}/sendMessage/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: `${phone}@c.us`, message }),
+      });
+      if (!r.ok) console.error('Notification Green-API échouée :', phone, r.status, await r.text());
+    } catch (err) {
+      console.error('Notification Green-API échouée :', phone, err.message);
+    }
   }
 }
 
