@@ -416,7 +416,7 @@
   .size-pills span{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#EEE9FB; color:#5B3FD6;}
   .size-guide{margin:12px 0; border:1px solid #E4DDF7; border-radius:12px; padding:10px 12px; background:#FAF8FF; font-size:13px;}
   .sg-row{display:flex; align-items:center; gap:10px; padding:4px 0;}
-  .sg-tag{min-width:44px; text-align:center; font-weight:700; padding:3px 8px; border-radius:8px; background:#6B4EE6; color:#fff; font-size:12px;}
+  .sg-tag{min-width:54px; white-space:nowrap; text-align:center; font-weight:700; padding:3px 8px; border-radius:8px; background:#6B4EE6; color:#fff; font-size:12px;}
   .sg-note{font-size:11px; opacity:.6; margin-top:6px;}
   .cart-line img.swatch{object-fit:cover; background:#f3eff8; border-radius:8px;}
   .cart-line .swatch{width:52px; height:52px; border-radius:2px; flex-shrink:0;
@@ -1326,12 +1326,20 @@
     'L':{fr:'40', h:'1,63–1,72 m', w:'63–72 kg'},
     'XL':{fr:'42', h:'1,65–1,75 m', w:'71–80 kg'},
     'XXL':{fr:'44', h:'1,68–1,78 m', w:'79–90 kg'},
+    // pantalons, jeans, jupes
+    'FR 34':{pants:1, h:'Jean W24 · XXS', w:'tour de taille ≈ 61 cm'},
+    'FR 36':{pants:1, h:'Jean W25-26 · XS', w:'tour de taille ≈ 64–66 cm'},
+    'FR 38':{pants:1, h:'Jean W27 · S', w:'tour de taille ≈ 69 cm'},
+    'FR 40':{pants:1, h:'Jean W28-29 · M', w:'tour de taille ≈ 71–74 cm'},
+    'FR 42':{pants:1, h:'Jean W30 · L', w:'tour de taille ≈ 76 cm'},
+    'FR 44':{pants:1, h:'Jean W31-32 · XL', w:'tour de taille ≈ 79–81 cm'},
+    'FR 46':{pants:1, h:'Jean W33-34 · XXL', w:'tour de taille ≈ 84–86 cm'},
   };
   const sizeList = p => (p.sizes || '').split(',').map(x => x.trim()).filter(Boolean);
   function sizeGuideHTML(p){
     const list = sizeList(p); if(!list.length) return '';
     return '<div class="size-guide">' + list.map(sz => { const g = SIZE_GUIDE[sz];
-      return `<div class="sg-row"><span class="sg-tag">${sz}</span>${g ? `<span>${g.h} · ${g.w}${g.fr ? ' · FR ' + g.fr : ''}</span>` : '<span>Convient à la plupart des morphologies</span>'}</div>`; }).join('') + '<div class="sg-note">Correspondance indicative, selon la coupe de l\'article.</div></div>';
+      return `<div class="sg-row"><span class="sg-tag">${sz}</span>${g ? `<span>${g.h} · ${g.w}${g.fr ? ' · FR ' + g.fr : ''}</span>` : '<span>Convient à la plupart des morphologies</span>'}</div>`; }).join('') + `<div class="sg-note">${list.some(x => SIZE_GUIDE[x] && SIZE_GUIDE[x].pants) ? 'Mesure ton tour de taille au niveau du nombril. ' : ''}Correspondance indicative, selon la coupe de l\'article.</div></div>`;
   }
 
   function askSizeCheck(id){

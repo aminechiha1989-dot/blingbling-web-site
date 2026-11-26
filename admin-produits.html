@@ -650,14 +650,28 @@
     {s:'XXL', fr:'44', h:'1,68–1,78 m', w:'79–90 kg'},
     {s:'Taille unique', fr:'', h:'', w:''},
   ];
+  // Pantalons / jeans / jupes : taille FR + taille jean (W) + tour de taille
+  const PANTS_GUIDE = [
+    {s:'FR 34', h:'W24 · XXS', w:'tour de taille ≈ 61 cm'},
+    {s:'FR 36', h:'W25-26 · XS', w:'≈ 64–66 cm'},
+    {s:'FR 38', h:'W27 · S', w:'≈ 69 cm'},
+    {s:'FR 40', h:'W28-29 · M', w:'≈ 71–74 cm'},
+    {s:'FR 42', h:'W30 · L', w:'≈ 76 cm'},
+    {s:'FR 44', h:'W31-32 · XL', w:'≈ 79–81 cm'},
+    {s:'FR 46', h:'W33-34 · XXL', w:'≈ 84–86 cm'},
+  ];
+  const isPants = () => { try{ return /pantalon|jean|jupe/i.test(curSub || ''); }catch(e){ return false; } };
+  const activeGuide = () => isPants() ? PANTS_GUIDE : SIZE_GUIDE;
   let curSizes = [];
   function renderSizeChips(){
     const wrap = document.getElementById('size-chips');
-    wrap.innerHTML = SIZE_GUIDE.map(g => `<button type="button" class="chip size ${curSizes.includes(g.s)?'on':''}" data-size="${g.s}">${g.s}${g.h?`<small>${g.h} · ${g.w}</small>`:''}</button>`).join('');
+    const G = activeGuide();
+    document.getElementById('size-hint').textContent = isPants() ? 'Grille pantalon : taille FR, taille jean (W) et tour de taille.' : "Touche une ou plusieurs tailles. La correspondance taille/poids s'affichera sur le site.";
+    wrap.innerHTML = G.map(g => `<button type="button" class="chip size ${curSizes.includes(g.s)?'on':''}" data-size="${g.s}">${g.s}${g.h?`<small>${g.h} · ${g.w}</small>`:''}</button>`).join('');
     wrap.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => {
       const v = b.dataset.size;
       curSizes = curSizes.includes(v) ? curSizes.filter(x => x !== v) : [...curSizes, v];
-      curSizes.sort((a,b) => SIZE_GUIDE.findIndex(g=>g.s===a) - SIZE_GUIDE.findIndex(g=>g.s===b));
+      curSizes.sort((a,b) => G.findIndex(g=>g.s===a) - G.findIndex(g=>g.s===b));
       renderSizeChips();
     }));
   }
@@ -741,6 +755,7 @@
     const subs = CAT_TREE[curMain] || [];
     subWrap.innerHTML = subs.map(x => `<button type="button" class="chip sub ${x === curSub ? 'on' : ''}" data-sub="${x}">${x}</button>`).join('');
     subWrap.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => setCategory(`${curMain} / ${b.dataset.sub}`)));
+    try{ const ok = activeGuide().map(g => g.s); curSizes = curSizes.filter(x => ok.includes(x)); renderSizeChips(); }catch(e){ /* tailles pas encore prêtes */ }
   }
   document.querySelectorAll('#cat-chips .chip').forEach(c => c.addEventListener('click', () => setCategory(c.dataset.cat)));
   function showPreview(src){
