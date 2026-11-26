@@ -1,27 +1,42 @@
 require('dotenv').config();
-const TIKTOK_USERNAME = 'amoulette.soltani';
+// Comptes TikTok surveillés (séparés par des virgules), modifiable via la variable Render TIKTOK_ACCOUNTS
+const TIKTOK_ACCOUNTS = (process.env.TIKTOK_ACCOUNTS || 'amoulette.soltani')
+  .split(',').map(s => s.trim().replace(/^@/, '')).filter(Boolean);
 
+async function isAccountLive(user) {
+  const res = await fetch(
+    `https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId=${encodeURIComponent(user)}`,
+    { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } }
+  );
+  const data = await res.json();
+  return data?.data?.liveRoom?.status === 2;
+}
+
+// Détection automatique : le 1er compte trouvé en live est enregistré
 async function checkTikTokLiveStatus() {
+  let liveAccount = '';
+  for (const user of TIKTOK_ACCOUNTS) {
+    try {
+      if (await isAccountLive(user)) { liveAccount = user; break; }
+    } catch (err) {
+      console.error(`Vérification TikTok live échouée (${user}) :`, err.message);
+    }
+  }
   try {
-    const res = await fetch(
-      `https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId=${TIKTOK_USERNAME}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } }
-    );
-    const data = await res.json();
-    const isLive = data?.data?.liveRoom?.status === 2;
     const { client } = require('./db');
     await client.execute({
-      sql: `UPDATE site_status SET is_live = ?, updated_at = datetime('now') WHERE id = 1`,
-      args: [isLive ? 1 : 0],
+      sql: `UPDATE site_status SET auto_live = ?, live_account = ?, updated_at = datetime('now') WHERE id = 1`,
+      args: [liveAccount ? 1 : 0, liveAccount],
     });
   } catch (err) {
-    console.error('Vérification TikTok live échouée :', err.message);
+    console.error('Enregistrement du statut live échoué :', err.message);
   }
 }
 
-// Vérifie toutes les 60 secondes, + une fois tout de suite au démarrage
+// Vérifie toutes les 60 secondes (après le démarrage de la base)
 setInterval(checkTikTokLiveStatus, 60000);
-checkTikTokLiveStatus();
+setTimeout(checkTikTokLiveStatus, 8000);
+module.exports.TIKTOK_ACCOUNTS = TIKTOK_ACCOUNTS;
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');

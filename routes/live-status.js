@@ -9,11 +9,21 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const result = await client.execute({
-      sql: 'SELECT is_live FROM site_status WHERE id = 1',
+      sql: 'SELECT is_live, auto_live, live_account FROM site_status WHERE id = 1',
       args: [],
     });
-    const isLive = result.rows.length ? !!result.rows[0].is_live : false;
-    res.json({ is_live: isLive });
+    const row = result.rows[0] || {};
+    const accounts = (process.env.TIKTOK_ACCOUNTS || 'amoulette.soltani').split(',').map(s => s.trim().replace(/^@/, '')).filter(Boolean);
+    const manual = !!row.is_live;              // bouton « Je suis en live » de l'admin
+    const auto = !!row.auto_live;              // détecté automatiquement sur TikTok
+    const account = (auto && row.live_account) || accounts[0] || '';
+    res.json({
+      is_live: manual || auto,
+      manual_live: manual,
+      auto_live: auto,
+      account,
+      url: account ? `https://www.tiktok.com/@${account}/live` : '',
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur serveur' });
