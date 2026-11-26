@@ -773,6 +773,8 @@
   .cond-badge.cond-empty{visibility:hidden;}
   .size-pills:empty{display:none;}
   @media (max-width:700px){ .size-pills:empty{display:flex; visibility:hidden;} }
+  .product .p-cat{font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#6B4EE6; margin:8px 0 -2px;}
+  @media (max-width:700px){ .product .p-cat{font-size:9.5px; margin:7px 0 -4px;} }
 </style>
 </head>
 <body>
@@ -1155,6 +1157,7 @@
           ${p.is_live ? '<span class="live-badge"><span class="dot"></span>Live</span>' : ''}
           ${p.stock === 1 ? '<span class="unique-badge">Pièce unique</span>' : ''}
         </div>
+        ${pc.main ? `<div class="p-cat">${pc.main}</div>` : ''}
         <div class="p-row"><h3>${p.name}</h3><span class="price">${priceHTML(p)}</span></div>
         <div class="sub">${pc.sub ? pc.sub + (p.description ? ' · ' : '') : ''}${p.description || ''}</div>
         <div class="p-meta">
@@ -1207,7 +1210,7 @@
       subEl.textContent = `${list.length} pièce${list.length !== 1 ? 's' : ''} en promo.`;
       html = list.length ? `<div class="products">${list.map(cardHtml).join('')}</div>` : '<p class="empty">Aucune promo pour l’instant. Reviens bientôt !</p>';
     } else if(activeCategory){
-      const inCat = products.filter(p => parseCat(p.category).main === activeCategory);
+      const inCat = products.filter(p => parseCat(p.category).main === activeCategory && !discountOf(p)); // les promos vont dans « Promo »
       titleEl.innerHTML = `${activeSub ? activeCategory + ' · ' + activeSub : activeCategory} <button type="button" class="back-home" id="back-home">← Accueil</button>`;
       if(activeSub){
         const list = inCat.filter(p => parseCat(p.category).sub === activeSub);
@@ -1222,10 +1225,13 @@
     } else {
       titleEl.textContent = 'Toutes nos pièces';
       subEl.textContent = "Pièces uniques, prix fixes. Quand c'est parti, c'est parti.";
-      const newest = [...products].sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
+      const regular = products.filter(p => !discountOf(p));      // hors promo
+      const promos = soldLast(products.filter(p => discountOf(p) > 0)).sort((a, b) => (a.stock <= 0) - (b.stock <= 0) || discountOf(b) - discountOf(a));
+      const newest = [...regular].sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 4);
       html += group('Nouveautés', newest, 0);
-      CAT_ORDER.forEach(cat => { html += group(cat, products.filter(p => parseCat(p.category).main === cat), 4, cat, ''); });
-      html += group('Autres pièces', products.filter(p => !CAT_ORDER.includes(parseCat(p.category).main)), 0);
+      html += group('Promo', promos, 4, 'Promo', '');
+      CAT_ORDER.forEach(cat => { html += group(cat, regular.filter(p => parseCat(p.category).main === cat), 4, cat, ''); });
+      html += group('Autres pièces', regular.filter(p => !CAT_ORDER.includes(parseCat(p.category).main)), 0);
       if(!html) html = '<p class="empty">Les pièces arrivent bientôt.</p>';
     }
     grid.innerHTML = html;
