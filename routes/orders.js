@@ -101,11 +101,38 @@ async function notifyGreenApi(order, items) {
   }
 }
 
+// ---------- Sécurité des notifications ----------
+// Plafond global : au maximum 30 commandes notifiées par heure (évite qu'un robot
+// fasse bannir le numéro WhatsApp en déclenchant des centaines de messages).
+const notifLog = [];
+function notifAllowed() {
+  const now = Date.now();
+  while (notifLog.length && now - notifLog[0] > 3600e3) notifLog.shift();
+  if (notifLog.length >= 30) return false;
+  notifLog.push(now); return true;
+}
+// Nettoie un texte saisi par le client : pas de caractères de contrôle, longueur limitée
+const clean = (v, max) => String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+
 router.post('/', async (req, res) => {
-  const { customer_name, phone, city, address, payment_method, items } = req.body;
+  const customer_name = clean(req.body.customer_name, 60);
+  const city = clean(req.body.city, 40);
+  const address = clean(req.body.address, 200);
+  const phone = clean(req.body.phone, 20).replace(/[^\d+ ]/g, '');
+  const { payment_method, items } = req.body;
 
   if (!customer_name || !phone || !city || !address) {
     return res.status(400).json({ error: 'Informations client incomplètes' });
+  }
+  if (customer_name.length < 2 || address.length < 5) {
+    return res.status(400).json({ error: 'Nom ou adresse trop courts' });
+  }
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 13) {
+    return res.status(400).json({ error: 'Numéro de téléphone invalide' });
+  }
+  if (Array.isArray(items) && (items.length > 20 || items.some(it => !Number.isInteger(Number(it?.quantity)) || Number(it.quantity) < 1 || Number(it.quantity) > 10))) {
+    return res.status(400).json({ error: 'Panier invalide' });
   }
   if (!['cod', 'online'].includes(payment_method)) {
     return res.status(400).json({ error: 'payment_method doit être "cod" ou "online"' });
@@ -160,9 +187,11 @@ router.post('/', async (req, res) => {
     const order = await client.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [orderId] });
     const orderItems = await client.execute({ sql: 'SELECT * FROM order_items WHERE order_id = ?', args: [orderId] });
     res.status(201).json({ ...order.rows[0], items: orderItems.rows });
-    notifyWhatsApp(order.rows[0], orderItems.rows);
-    notifyNtfy(order.rows[0], orderItems.rows);
-    notifyGreenApi(order.rows[0], orderItems.rows); // n'attend pas : la réponse au client part tout de suite
+    if (notifAllowed()) {
+      notifyWhatsApp(order.rows[0], orderItems.rows);
+      notifyNtfy(order.rows[0], orderItems.rows);
+      notifyGreenApi(order.rows[0], orderItems.rows);
+    } else console.warn('Plafond de notifications atteint : notification ignorée'); // n'attend pas : la réponse au client part tout de suite
   } catch (err) {
     await tx.rollback();
     res.status(400).json({ error: err.message });

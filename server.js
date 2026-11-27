@@ -49,11 +49,20 @@ const liveStatusRouter = require('./routes/live-status');
 
 const app = express();
 
+app.set('trust proxy', 1); // Render : vraie adresse IP du visiteur pour les limites
+app.disable('x-powered-by');
+app.use((req, res, next) => { // en-têtes de sécurité de base
+  res.set({ 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin' });
+  next();
+});
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '200kb' }));
 
 const orderLimiter = rateLimit({ windowMs: 60 * 1000, max: 10 });
 app.use('/api/orders', orderLimiter);
+// Création de commandes : 5 par quart d'heure et par visiteur (anti-spam)
+const newOrderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Trop de commandes en peu de temps. Réessaie plus tard ou contacte-nous sur WhatsApp.' } });
+app.post('/api/orders', newOrderLimiter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
