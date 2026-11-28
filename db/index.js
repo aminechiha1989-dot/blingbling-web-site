@@ -62,6 +62,7 @@ async function initDb() {
   try { await client.execute(`ALTER TABLE products ADD COLUMN condition TEXT`); } catch (err) { /* déjà là */ }
   try { await client.execute(`ALTER TABLE products ADD COLUMN cutout_url TEXT`); } catch (err) { /* déjà là */ }
   try { await client.execute(`ALTER TABLE products ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0`); } catch (err) { /* déjà là */ }
+  try { await client.execute(`ALTER TABLE products ADD COLUMN extra_images TEXT`); } catch (err) { /* déjà là */ }
   try { await client.execute(`ALTER TABLE site_status ADD COLUMN auto_live INTEGER NOT NULL DEFAULT 0`); } catch (err) { /* déjà là */ }
   try { await client.execute(`ALTER TABLE site_status ADD COLUMN live_account TEXT`); } catch (err) { /* déjà là */ }
 // Ajoute la colonne hero_image_url si elle n'existe pas encore

@@ -38,16 +38,16 @@ router.get('/:id', async (req, res) => {
 // --- Routes admin (protégées) ---
 
 router.post('/', requireAdmin, async (req, res) => {
-  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '', condition = '', cutout_url = '', discount_percent = 0 } = req.body;
+  const { name, description = '', price_millimes, category = '', image_url = '', stock = 0, is_live = 0, sizes = '', condition = '', cutout_url = '', discount_percent = 0, extra_images = '' } = req.body;
 
   if (!name || !price_millimes) {
     return res.status(400).json({ error: 'name et price_millimes sont requis' });
   }
 
   const result = await client.execute({
-    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes, condition, cutout_url, discount_percent)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes, condition, cutout_url, Math.max(0, Math.min(90, parseInt(discount_percent, 10) || 0))],
+    sql: `INSERT INTO products (name, description, price_millimes, category, image_url, stock, is_live, sizes, condition, cutout_url, discount_percent, extra_images)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, description, price_millimes, category, image_url, stock, is_live ? 1 : 0, sizes, condition, cutout_url, Math.max(0, Math.min(90, parseInt(discount_percent, 10) || 0)), String(extra_images || '').slice(0, 4000)],
   });
 
   const created = await client.execute({
@@ -64,7 +64,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   });
   if (existing.rows.length === 0) return res.status(404).json({ error: 'Produit introuvable' });
 
-  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes', 'condition', 'cutout_url', 'discount_percent'];
+  const fields = ['name', 'description', 'price_millimes', 'category', 'image_url', 'stock', 'is_live', 'sizes', 'condition', 'cutout_url', 'discount_percent', 'extra_images'];
   const sets = [];
   const args = [];
 
