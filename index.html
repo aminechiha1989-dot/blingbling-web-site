@@ -1098,26 +1098,37 @@
   }
 
   // Synchro auto du stock (article vendu -> sticker) toutes les 30 s
-  async function syncStock(){
-    if(document.hidden) return;
+  // Synchro avec l'admin : toute modification (vente, ajout, prix, nom, tailles, photos, promo…)
+  // est reprise sur la page sans la recharger.
+  let syncing = false;
+  async function syncStock(force){
+    if((document.hidden && !force) || syncing) return;
+    syncing = true;
     try{
-      const res = await fetch(`${API_BASE}/api/products?include_sold=1`, {cache:'no-store'});
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1&t=${Date.now()}`, {cache:'no-store'});
       if(!res.ok) return;
       const fresh = await res.json();
-      const sig = x => JSON.stringify(x.map(p => [p.id, p.stock]));
-      if(sig(fresh) !== sig(products) || JSON.stringify(fresh.map(p=>[p.image_url,p.discount_percent,p.cutout_url])) !== JSON.stringify(products.map(p=>[p.image_url,p.discount_percent,p.cutout_url]))){
-        products = fresh; renderProducts(); applyCategoryCovers(); buildHeroSlides(); try{ buildTicker(); }catch(e){}
-        try{ const ci = await fetch('cutouts/index.json', {cache:'no-store'}); if(ci.ok){ CUTOUTS = new Map(Object.entries(await ci.json())); renderProducts(); } }catch(e){}
+      if(JSON.stringify(fresh) !== JSON.stringify(products)){
+        products = fresh;
+        try{ const ci = await fetch(`cutouts/index.json?t=${Date.now()}`, {cache:'no-store'}); if(ci.ok) CUTOUTS = new Map(Object.entries(await ci.json())); }catch(e){}
+        renderProducts(); applyCategoryCovers(); buildHeroSlides(); try{ buildTicker(); }catch(e){}
+        // si la fiche d'un article est ouverte, on la met à jour aussi
+        const ov = document.getElementById('quickview-overlay');
+        if(ov && ov.classList.contains('open') && window.__qvId) openQuickView(window.__qvId);
       }
-    }catch(e){}
+    }catch(e){} finally { syncing = false; }
   }
-  setInterval(syncStock, 20000);
-  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncStock(); });
+  setInterval(syncStock, 10000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncStock(true); });
+  window.addEventListener('focus', () => syncStock(true));
+  // signal instantané quand l'admin est ouvert dans le même navigateur
+  try{ new BroadcastChannel('bb-sync').onmessage = () => syncStock(true); }catch(e){}
+  window.addEventListener('storage', (e) => { if(e.key === 'bb-sync') syncStock(true); });
 
   async function loadProducts(){
     try{ const ci = await fetch('cutouts/index.json', {cache:'no-store'}); if(ci.ok) CUTOUTS = new Map(Object.entries(await ci.json())); }catch(e){}
     try{
-      const res = await fetch(`${API_BASE}/api/products?include_sold=1`);
+      const res = await fetch(`${API_BASE}/api/products?include_sold=1&t=${Date.now()}`, {cache:'no-store'});
       products = await res.json();
       renderProducts();
       buildTicker();
@@ -1467,6 +1478,7 @@
   });
 
   function openQuickView(id){
+    window.__qvId = id;
     const p = products.find(p => p.id === id);
     if(!p) return;
     document.getElementById('qv-img').src = p.image_url ? lightSrc(p.image_url).replace('w_700','w_1600') : '';

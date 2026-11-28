@@ -66,7 +66,7 @@ app.post('/api/orders', newOrderLimiter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-app.use('/api/products', productsRouter);
+app.use('/api/products', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }, productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/live-status', liveStatusRouter);
